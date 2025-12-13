@@ -38,11 +38,11 @@ function NotificationController({ user }) {
           const data = change.doc.data()
           if (!data.createdAt) return 
 
-          // AJUSTE 1: Tempo aumentado para 60 segundos (ajuda se a net for lenta)
+          // AJUSTE 1: Aumentei o tempo para 60 segundos (ajuda se a internet for lenta)
           const isRecent = (Date.now() - data.createdAt.toMillis() < 60000)
           
-          // AJUSTE 2: REMOVI a verificação de ID. 
-          // Agora notifica TUDO, mesmo se for você mesmo mandando.
+          // AJUSTE 2: REMOVI a verificação de ID (isFromOthers). 
+          // Agora notifica TUDO, mesmo se for você mesmo mandando com a mesma conta.
           
           if (isRecent && Notification.permission === "granted") {
             let title = `💌 Nova Mensagem`
@@ -65,7 +65,7 @@ function NotificationController({ user }) {
     return () => unsubscribe()
   }, [user])
 
-  // Se não tem permissão, mostra botão vermelho gigante
+  // Se não tem permissão, mostra botão vermelho para ativar
   if (permission !== 'granted') {
     return (
       <button 
