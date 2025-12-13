@@ -1,29 +1,33 @@
 import { Heart } from 'lucide-react'
+import kiss from '../assets/kiss.jpeg'
+import wicked from '../assets/wicked.jpeg'
+import camisas from '../assets/camisas.jpeg'
+import formatura from '../assets/formei.jpeg'
 
 export default function Gallery() {
   const fotos = [
     { 
       id: 1, 
-      url: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=600', 
-      legenda: 'Nosso primeiro pôr do sol',
+      url: kiss, 
+      legenda: 'um dos primeiros encontros',
       rotacao: 'rotate-2'
     },
     { 
       id: 2, 
-      url: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=600', 
-      legenda: 'Aquele café da manhã...',
+      url: wicked, 
+      legenda: 'wickeeeeed 🎶',
       rotacao: '-rotate-1'
     },
     { 
       id: 3, 
-      url: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?q=80&w=600', 
-      legenda: 'Sorriso mais lindo',
+      url: camisas, 
+      legenda: 'o dia das camisas combinando',
       rotacao: 'rotate-3'
     },
     { 
       id: 4, 
-      url: 'https://images.unsplash.com/photo-1621609764095-6b21aa5eb8c3?q=80&w=600', 
-      legenda: 'Bagunça boa',
+      url: formatura, 
+      legenda: 'formeiiii',
       rotacao: '-rotate-2'
     },
   ]

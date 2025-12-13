@@ -6,9 +6,6 @@ import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, add
 export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
   
-  // Quiz
-  const [respostaQuiz, setRespostaQuiz] = useState('')
-  const [resultadoQuiz, setResultadoQuiz] = useState(null)
 
   // Cupons vindos do Firebase
   const [cuponsUsados, setCuponsUsados] = useState([])
@@ -17,7 +14,7 @@ export default function Home() {
   const mensagens = {
     saudade: "Quando a saudade apertar, lembre-se que estou a apenas uma mensagem de distância. Te amo muito! ❤️",
     estresse: "Respire fundo... conte até 10. Você é incrível e consegue resolver qualquer coisa. Estou orgulhoso de você! 🌟",
-    rir: "Por que o esqueleto não brigou com ninguém? Porque ele não tem estômago para isso! 😂 (Sim, piada ruim pra te fazer rir!)"
+    rir: "Dizem que a gravidade é apenas uma teoria... até o dia em que aquela cadeira decidiu provar que a lei é implacável com você!🪑"
   }
 
   // Lista de Cupons
@@ -84,15 +81,7 @@ export default function Home() {
     }
   }
 
-  // 4. AÇÃO: Quiz
-  const verificarQuiz = () => {
-    if (respostaQuiz.toLowerCase().includes("pizza")) { // Mude "pizza" para a resposta certa
-      setResultadoQuiz("Acertou! 🍕 Eu sabia que você me conhecia!")
-      notificarNoChat("🧠 Acertei o Quiz sobre sua comida favorita! 🍕")
-    } else {
-      setResultadoQuiz("Errado! 😱 Tente de novo!")
-    }
-  }
+
 
   // 5. AÇÃO: Abrir Carta (Opcional notificar)
   const abrirCarta = (tipo, texto) => {
