@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Heart, Calendar, Image, MessageCircle, LogOut, Bell } from 'lucide-react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
@@ -11,17 +11,16 @@ import Gallery from './pages/Gallery'
 import Chat from './pages/Chat'
 import Login from './pages/Login'
 
-// --- Controlador de Notificações ---
+// --- Controlador de Notificações (MODO TESTE TOTAL) ---
 function NotificationController({ user }) {
   const [permission, setPermission] = useState(Notification.permission)
 
-  // Função que pede a permissão quando clica no botão
   const requestPermission = async () => {
     const result = await Notification.requestPermission()
     setPermission(result)
     if (result === 'granted') {
-      new Notification("🔔 Notificações Ativadas!", {
-        body: "Agora você saberá quando o amor chamar.",
+      new Notification("🔔 Teste de Som", {
+        body: "Se leu isso, a permissão está OK!",
         icon: '/vite.svg'
       })
     }
@@ -30,7 +29,7 @@ function NotificationController({ user }) {
   useEffect(() => {
     if (!user) return
 
-    // Monitorar chat em tempo real
+    // Monitora a última mensagem do chat
     const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -39,23 +38,24 @@ function NotificationController({ user }) {
           const data = change.doc.data()
           if (!data.createdAt) return 
 
-          // AUMENTAMOS PARA 20 SEGUNDOS (ajuda se a internet estiver lenta)
-          const isRecent = (Date.now() - data.createdAt.toMillis() < 20000)
+          // AJUSTE 1: Tempo aumentado para 60 segundos (ajuda se a net for lenta)
+          const isRecent = (Date.now() - data.createdAt.toMillis() < 60000)
           
-          // Verifica se NÃO fui eu quem mandou
-          const isFromOthers = data.senderId !== user.uid
-
-          if (isRecent && isFromOthers && Notification.permission === "granted") {
-            let title = `💌 ${data.userName || 'Amor'} diz:`
+          // AJUSTE 2: REMOVI a verificação de ID. 
+          // Agora notifica TUDO, mesmo se for você mesmo mandando.
+          
+          if (isRecent && Notification.permission === "granted") {
+            let title = `💌 Nova Mensagem`
             if (data.isSystem) title = "✨ Novidade no App!"
+            if (data.userName) title = `💌 ${data.userName} falou:`
 
             // Tenta vibrar o celular
-            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            try { navigator.vibrate([200, 100, 200]); } catch(e){}
 
             new Notification(title, {
               body: data.text,
-              icon: '/vite.svg', 
-              tag: 'chat-msg'
+              icon: '/vite.svg',
+              tag: 'chat-msg' // Evita acumular
             })
           }
         }
@@ -65,15 +65,14 @@ function NotificationController({ user }) {
     return () => unsubscribe()
   }, [user])
 
-  // Se a permissão não foi dada, mostra o botão flutuante
+  // Se não tem permissão, mostra botão vermelho gigante
   if (permission !== 'granted') {
     return (
       <button 
         onClick={requestPermission}
-        className="fixed top-4 left-4 z-50 bg-pink-600 text-white p-3 rounded-full shadow-lg animate-bounce border-2 border-white"
-        title="Ativar Notificações"
+        className="fixed top-24 left-4 z-50 bg-red-600 text-white p-4 rounded-full shadow-2xl animate-bounce border-4 border-white"
       >
-        <Bell size={24} fill="currentColor" />
+        <Bell size={32} />
       </button>
     )
   }
@@ -130,7 +129,6 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {/* Controlador de Notificações */}
       <NotificationController user={user} />
       
       <div className="max-w-md mx-auto min-h-screen bg-slate-950 relative">
