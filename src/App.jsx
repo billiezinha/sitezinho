@@ -11,11 +11,11 @@ import Gallery from './pages/Gallery'
 import Chat from './pages/Chat'
 import Login from './pages/Login'
 
-// --- Controlador de Notificações Inteligente ---
+// --- Controlador de Notificações ---
 function NotificationController({ user }) {
   const [permission, setPermission] = useState(Notification.permission)
-  
-  // Função para pedir permissão com clique (obrigatório em celulares)
+
+  // Função que pede a permissão quando clica no botão
   const requestPermission = async () => {
     const result = await Notification.requestPermission()
     setPermission(result)
@@ -28,30 +28,33 @@ function NotificationController({ user }) {
   }
 
   useEffect(() => {
-    // Monitorar chat
+    if (!user) return
+
+    // Monitorar chat em tempo real
     const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
           const data = change.doc.data()
-          if (!data.createdAt) return // Ignora msg sem data (ainda escrevendo)
+          if (!data.createdAt) return 
 
-          // Aumentei para 20 segundos (20000ms) para evitar atrasos de rede
+          // AUMENTAMOS PARA 20 SEGUNDOS (ajuda se a internet estiver lenta)
           const isRecent = (Date.now() - data.createdAt.toMillis() < 20000)
+          
+          // Verifica se NÃO fui eu quem mandou
           const isFromOthers = data.senderId !== user.uid
 
           if (isRecent && isFromOthers && Notification.permission === "granted") {
             let title = `💌 ${data.userName || 'Amor'} diz:`
             if (data.isSystem) title = "✨ Novidade no App!"
 
-            // Tenta focar a janela se possível (apenas Desktop)
-            try { window.focus() } catch(e){}
+            // Tenta vibrar o celular
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
             new Notification(title, {
               body: data.text,
-              icon: '/vite.svg',
-              vibrate: [200, 100, 200],
+              icon: '/vite.svg', 
               tag: 'chat-msg'
             })
           }
@@ -62,15 +65,15 @@ function NotificationController({ user }) {
     return () => unsubscribe()
   }, [user])
 
-  // Se não tiver permissão, mostra um botão fixo discreto
+  // Se a permissão não foi dada, mostra o botão flutuante
   if (permission !== 'granted') {
     return (
       <button 
         onClick={requestPermission}
-        className="fixed top-4 left-4 z-50 bg-pink-600 text-white p-2 rounded-full shadow-lg animate-bounce"
+        className="fixed top-4 left-4 z-50 bg-pink-600 text-white p-3 rounded-full shadow-lg animate-bounce border-2 border-white"
         title="Ativar Notificações"
       >
-        <Bell size={20} />
+        <Bell size={24} fill="currentColor" />
       </button>
     )
   }
@@ -127,7 +130,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {/* Passamos o user para o controlador saber quem somos */}
+      {/* Controlador de Notificações */}
       <NotificationController user={user} />
       
       <div className="max-w-md mx-auto min-h-screen bg-slate-950 relative">
