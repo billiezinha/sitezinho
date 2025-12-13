@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Heart, Calendar, Image, MessageCircle, LogOut } from 'lucide-react'
+import { Heart, Calendar, Image, MessageCircle, LogOut, Bell } from 'lucide-react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
@@ -13,28 +13,40 @@ import Login from './pages/Login'
 
 // --- Controlador de Notificações Inteligente ---
 function NotificationController({ user }) {
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission()
+  const [permission, setPermission] = useState(Notification.permission)
+  
+  // Função para pedir permissão com clique (obrigatório em celulares)
+  const requestPermission = async () => {
+    const result = await Notification.requestPermission()
+    setPermission(result)
+    if (result === 'granted') {
+      new Notification("🔔 Notificações Ativadas!", {
+        body: "Agora você saberá quando o amor chamar.",
+        icon: '/vite.svg'
+      })
     }
+  }
 
-    // Monitorar chat em tempo real
+  useEffect(() => {
+    // Monitorar chat
     const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
           const data = change.doc.data()
-          
-          // Verifica se é recente (menos de 5s atrás)
-          const isRecent = data.createdAt && (Date.now() - data.createdAt.toMillis() < 5000)
-          
-          // Verifica se NÃO fui eu quem mandou (comparando UIDs)
+          if (!data.createdAt) return // Ignora msg sem data (ainda escrevendo)
+
+          // Aumentei para 20 segundos (20000ms) para evitar atrasos de rede
+          const isRecent = (Date.now() - data.createdAt.toMillis() < 20000)
           const isFromOthers = data.senderId !== user.uid
 
           if (isRecent && isFromOthers && Notification.permission === "granted") {
             let title = `💌 ${data.userName || 'Amor'} diz:`
             if (data.isSystem) title = "✨ Novidade no App!"
+
+            // Tenta focar a janela se possível (apenas Desktop)
+            try { window.focus() } catch(e){}
 
             new Notification(title, {
               body: data.text,
@@ -49,6 +61,19 @@ function NotificationController({ user }) {
 
     return () => unsubscribe()
   }, [user])
+
+  // Se não tiver permissão, mostra um botão fixo discreto
+  if (permission !== 'granted') {
+    return (
+      <button 
+        onClick={requestPermission}
+        className="fixed top-4 left-4 z-50 bg-pink-600 text-white p-2 rounded-full shadow-lg animate-bounce"
+        title="Ativar Notificações"
+      >
+        <Bell size={20} />
+      </button>
+    )
+  }
 
   return null
 }
@@ -89,7 +114,6 @@ export default function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Ouve se o usuário entrou ou saiu
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
       setLoading(false)
@@ -99,21 +123,17 @@ export default function App() {
 
   if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-pink-500">Carregando...</div>
 
-  // Se não tiver usuário, mostra LOGIN
   if (!user) return <Login />
 
-  // Se tiver usuário, mostra o APP
   return (
     <BrowserRouter>
+      {/* Passamos o user para o controlador saber quem somos */}
       <NotificationController user={user} />
       
       <div className="max-w-md mx-auto min-h-screen bg-slate-950 relative">
-        
-        {/* Botão Sair (Opcional, fica no topo) */}
         <button 
           onClick={() => signOut(auth)} 
-          className="absolute top-4 right-4 z-50 text-slate-600 hover:text-red-500"
-          title="Sair"
+          className="absolute top-4 right-4 z-40 text-slate-600 hover:text-red-500"
         >
           <LogOut size={20} />
         </button>
