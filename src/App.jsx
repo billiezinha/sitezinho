@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Heart, Calendar, Image, LogOut, Bell, Feather } from 'lucide-react'
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
+import { Heart, Calendar, Image, Feather, LogOut, Bell } from 'lucide-react'
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore' // Importações do Firebase
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
 
@@ -11,7 +11,7 @@ import Gallery from './pages/Gallery'
 import Poems from './pages/Poems'
 import Login from './pages/Login'
 
-// --- Controlador de Notificações (Focado em Poemas) ---
+// --- Controlador de Notificações ---
 function NotificationController({ user }) {
   const [permission, setPermission] = useState(Notification.permission)
 
@@ -23,7 +23,7 @@ function NotificationController({ user }) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
           registration.showNotification("🔔 Notificações Ativas", {
-            body: "Você saberá quando um novo poema chegar.",
+            body: "O sistema de alertas está pronto!",
             icon: '/pwa-192x192.png'
           })
         })
@@ -34,8 +34,8 @@ function NotificationController({ user }) {
   useEffect(() => {
     if (!user) return
 
-    // MUDANÇA: Agora ouvimos a coleção "poems" em vez de "chats"
-    const q = query(collection(db, "poems"), orderBy("createdAt", "desc"), limit(1))
+    // MUDANÇA: Agora ouvimos a coleção "notifications" (Central de Avisos)
+    const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
@@ -46,28 +46,28 @@ function NotificationController({ user }) {
           // Verifica se é recente (últimos 60s)
           const isRecent = (Date.now() - data.createdAt.toMillis() < 60000)
           
-          // Verifica se NÃO fui eu quem escreveu (para não notificar quem postou)
-          // Se quiser testar sozinho, comente a linha abaixo:
+          // Verifica se o remetente não sou eu (para não notificar minha própria ação)
+          // Se quiser testar sozinho, pode remover essa verificação temporariamente
           const isFromOthers = data.senderId !== user.uid
 
           if (isRecent && isFromOthers && Notification.permission === "granted") {
-            const title = `📜 Novo Poema: ${data.titulo}`
-            const body = "Toque para ler as palavras do meu coração..."
-
+            
+            // Vibração
             try { navigator.vibrate([200, 100, 200]); } catch(e){}
 
+            // Dispara no Celular (Barra de Status)
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(title, {
-                  body: body,
+                registration.showNotification(data.title || "✨ Nova Notificação", {
+                  body: data.text,
                   icon: '/pwa-192x192.png',
                   badge: '/vite.svg',
-                  tag: 'new-poem',
-                  data: { url: '/poems' } // Metadado para futuro clique
+                  tag: 'system-notif-' + change.doc.id,
+                  renotify: true
                 })
               })
             } else {
-              new Notification(title, { body, icon: '/vite.svg' })
+              new Notification(data.title, { body: data.text, icon: '/vite.svg' })
             }
           }
         }
@@ -81,8 +81,8 @@ function NotificationController({ user }) {
     return (
       <button 
         onClick={requestPermission}
-        className="fixed top-24 left-4 z-50 bg-pink-600 text-white p-3 rounded-full shadow-lg animate-bounce border-2 border-white"
-        title="Ativar Notificações de Poemas"
+        className="fixed top-4 left-4 z-50 bg-pink-600 text-white p-3 rounded-full shadow-lg animate-bounce border-2 border-white"
+        title="Ativar Notificações"
       >
         <Bell size={24} fill="currentColor" />
       </button>
@@ -92,7 +92,6 @@ function NotificationController({ user }) {
   return null
 }
 
-// --- Navegação ---
 function Navigation() {
   const location = useLocation();
   const getClass = (path) => 
@@ -122,7 +121,6 @@ function Navigation() {
   )
 }
 
-// --- App Principal ---
 export default function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)

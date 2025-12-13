@@ -7,24 +7,20 @@ export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
   const [cuponsUsados, setCuponsUsados] = useState([])
 
-  // Cartas disponíveis
   const mensagens = {
     saudade: "Quando a saudade apertar, lembre-se que estou a apenas uma mensagem de distância. Te amo muito! ❤️",
     estresse: "Respire fundo... conte até 10. Você é incrível e consegue resolver qualquer coisa. Estou orgulhoso de você! 🌟",
     rir: "Dizem que a gravidade é apenas uma teoria... até o dia em que aquela cadeira decidiu provar que a lei é implacável com você! 🪑"
   }
 
-  // Lista de Cupons
   const listaCupons = [
     { id: 1, text: "Vale uma Massagem 💆‍♂️" },
     { id: 2, text: "Vale escolher o filme 🎬" },
     { id: 3, text: "Jantar pago por mim 🍔" }
   ]
 
-  // 1. EFEITO: Sincronizar dados do Firebase (Cupons)
   useEffect(() => {
     const docRef = doc(db, "appData", "shared")
-    
     const checkDoc = async () => {
       const snap = await getDoc(docRef)
       if (!snap.exists()) {
@@ -32,25 +28,22 @@ export default function Home() {
       }
     }
     checkDoc()
-
     const unsubscribe = onSnapshot(docRef, (doc) => {
       if (doc.exists()) {
         setCuponsUsados(doc.data().cuponsUsados || [])
       }
     })
-
     return () => unsubscribe()
   }, [])
 
-  // 2. FUNÇÃO: Enviar Notificação para o Chat
-  const notificarNoChat = async (texto) => {
+  // Função genérica para enviar notificação
+  const enviarNotificacao = async (titulo, texto) => {
       try {
-        await addDoc(collection(db, "chats"), {
+        await addDoc(collection(db, "notifications"), {
+          title: titulo,
           text: texto,
           createdAt: serverTimestamp(),
-          user: 'sistema',
-          senderId: auth.currentUser?.uid, 
-          userName: auth.currentUser?.displayName,
+          senderId: auth.currentUser?.uid,
           isSystem: true
         })
       } catch (error) {
@@ -58,7 +51,6 @@ export default function Home() {
       }
     }
 
-  // 3. AÇÃO: Usar Cupom
   const usarCupom = async (id, text) => {
     if (!cuponsUsados.includes(id)) {
       if(window.confirm(`Tem certeza que quer gastar o "${text}" agora?`)) {
@@ -67,7 +59,8 @@ export default function Home() {
           await updateDoc(docRef, {
             cuponsUsados: arrayUnion(id)
           })
-          await notificarNoChat(`🎟️ Amor! Acabei de usar o cupom: ${text}`)
+          // AQUI: Envia para a nova coleção notifications
+          await enviarNotificacao("🎟️ Cupom Utilizado!", `Amor! Acabei de usar o: ${text}`)
         } catch (error) {
           console.error("Erro ao usar cupom:", error)
         }
@@ -75,7 +68,6 @@ export default function Home() {
     }
   }
 
-  // 4. AÇÃO: Abrir Carta
   const abrirCarta = (tipo, texto) => {
     setMensagemAtiva(texto)
   }
@@ -83,7 +75,6 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center min-h-screen p-6 pb-24 bg-slate-950 space-y-10">
       
-      {/* Título */}
       <div className="text-center mt-4">
         <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 drop-shadow-[0_0_10px_rgba(236,72,153,0.5)]">
           Para Wesley
@@ -95,11 +86,11 @@ export default function Home() {
       <div className="w-full max-w-sm bg-slate-900 rounded-xl border border-slate-800 p-4 shadow-lg">
         <div className="flex items-center gap-2 mb-3 text-slate-300">
           <Music size={18} className="text-green-400" />
-          <span className="font-bold text-sm">As músicas que me fazem pensar em você</span>
+          <span className="font-bold text-sm">Nossa Trilha Sonora</span>
         </div>
         <iframe 
           style={{borderRadius: '12px'}} 
-          src="https://open.spotify.com/embed/playlist/3lOVuBQtMtSee3LKsaE4FU?utm_source=generator" 
+          src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator" 
           width="100%" 
           height="80" 
           frameBorder="0" 
@@ -117,7 +108,7 @@ export default function Home() {
         </div>
         <div className="w-full h-48 bg-slate-800 rounded-xl overflow-hiddenHJ border border-slate-700 shadow-lg relative">
           <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253471.34840566776!2d-41.80557901985172!3d-6.9514019598709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x79c11a9cb386921%3A0xa1b5d1d3ae190b21!2sPiau%C3%AD%20Shopping%20Center!5e0!3m2!1spt-BR!2sbr!4v1765646540771!5m2!1spt-BR!2sbr" 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657..." 
             width="100%" 
             height="100%" 
             style={{border:0}} 
@@ -131,29 +122,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Abra Quando... */}
+      {/* Abra Quando */}
       <div className="w-full max-w-sm">
         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
           <Heart size={18} className="text-pink-500" /> Abra quando...
         </h3>
-        
         <div className="grid grid-cols-3 gap-3">
           <button onClick={() => abrirCarta('Saudade', mensagens.saudade)} className="flex flex-col items-center justify-center bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-pink-500 hover:bg-slate-800 transition">
             <Heart size={24} className="text-pink-400 mb-1" />
             <span className="text-[10px] text-slate-300">Saudade</span>
           </button>
-          
           <button onClick={() => abrirCarta('Estresse', mensagens.estresse)} className="flex flex-col items-center justify-center bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-purple-500 hover:bg-slate-800 transition">
             <Frown size={24} className="text-purple-400 mb-1" />
             <span className="text-[10px] text-slate-300">Estresse</span>
           </button>
-
           <button onClick={() => abrirCarta('Rir', mensagens.rir)} className="flex flex-col items-center justify-center bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-yellow-500 hover:bg-slate-800 transition">
             <Smile size={24} className="text-yellow-400 mb-1" />
             <span className="text-[10px] text-slate-300">Rir</span>
           </button>
         </div>
-
         {mensagemAtiva && (
           <div className="mt-4 p-4 bg-pink-500/10 border border-pink-500/30 rounded-xl text-center animate-pulse">
             <p className="text-slate-200 text-sm">{mensagemAtiva}</p>
@@ -162,7 +149,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Cupons do Amor */}
+      {/* Cupons */}
       <div className="w-full max-w-sm">
         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
           <Ticket size={18} className="text-yellow-500" /> Cupons do Amor
@@ -190,7 +177,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-
     </div>
   )
 }
