@@ -34,7 +34,7 @@ export default function Gallery() {
     { 
       id: 5, 
       url: alianças, 
-      legenda: 'Escreva sua legenda aqui ❤️', // Mude a legenda aqui
+      legenda: 'Eu te amo tantoooo', // Mude a legenda aqui
       rotacao: 'rotate-1'
     },
   ]

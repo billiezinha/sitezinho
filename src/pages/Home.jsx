@@ -90,7 +90,7 @@ export default function Home() {
         </div>
         <iframe 
           style={{borderRadius: '12px'}} 
-          src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator" 
+          src="https://open.spotify.com/embed/playlist/3lOVuBQtMtSee3LKsaE4FU?utm_source=generator" 
           width="100%" 
           height="80" 
           frameBorder="0" 
@@ -108,7 +108,7 @@ export default function Home() {
         </div>
         <div className="w-full h-48 bg-slate-800 rounded-xl overflow-hiddenHJ border border-slate-700 shadow-lg relative">
           <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657..." 
+            src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d253471.34838402295!2d-41.805579!3d-6.951402!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x79c11a9cb386921%3A0xa1b5d1d3ae190b21!2sPiau%C3%AD%20Shopping%20Center!5e0!3m2!1spt-BR!2sbr!4v1765649501130!5m2!1spt-BR!2sb" 
             width="100%" 
             height="100%" 
             style={{border:0}} 
