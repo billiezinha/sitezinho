@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Heart, Plane, Star, Gift, Clock } from 'lucide-react'
+import { Heart, Plane, Star, GraduationCap, Clock } from 'lucide-react'
 
 export default function Timeline() {
-  // --- Lógica do Contador (Trazida da Home) ---
   const [tempo, setTempo] = useState({ anos: 0, meses: 0, dias: 0 })
-  const dataInicio = new Date(2025, 7, 10) // 10 de Agosto de 2025
+  const dataInicio = new Date(2025, 7, 10) 
 
   useEffect(() => {
     const calcularTempo = () => {
@@ -25,7 +24,6 @@ export default function Timeline() {
     return () => clearInterval(timer)
   }, [])
 
-  // --- Eventos da Lista ---
   const eventos = [
     { 
       data: '10 Ago 2025', 
@@ -35,23 +33,30 @@ export default function Timeline() {
       cor: 'bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
     },
     { 
-      data: '15 Set 2025', 
-      titulo: 'Primeira Viagem', 
+      data: '25 Out 2025', 
+      titulo: 'Primeira ida à Dom Expedito', 
       descricao: 'Aquele final de semana na praia foi inesquecível.',
       icon: Plane,
       cor: 'bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
     },
     { 
-      data: '25 Dez 2025', 
-      titulo: 'Nosso Primeiro Natal', 
-      descricao: 'Trocando presentes e comendo muito!',
-      icon: Gift,
+      data: '31 Out 2025', 
+      titulo: 'Minha Formatura', 
+      descricao: 'Um momento especial em que você esteve ao meu lado.',
+      icon: GraduationCap,
       cor: 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]'
+    },
+    { 
+      data: '13 Dez 2025', 
+      titulo: 'O Pedido de Namoro 💍', 
+      descricao: 'O dia oficial do nosso "Sim". O início do nosso pra sempre!',
+      icon: Heart,
+      cor: 'bg-pink-600 shadow-[0_0_20px_rgba(219,39,119,0.8)] animate-pulse' // Destaque extra
     },
     { 
       data: 'Hoje', 
       titulo: 'Criando este App', 
-      descricao: 'Um presente feito com código e amor.',
+      descricao: 'Um presente feito com código e amor para celebrar nossa história.',
       icon: Star,
       cor: 'bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]'
     },
@@ -60,7 +65,6 @@ export default function Timeline() {
   return (
     <div className="p-6 pb-24 min-h-screen bg-slate-950">
       
-      {/* Cabeçalho com o Contador */}
       <div className="flex flex-col items-center mb-12">
         <h1 className="text-3xl font-bold text-center text-white mb-6">Nossa História ⏳</h1>
         
@@ -81,7 +85,6 @@ export default function Timeline() {
         <p className="text-slate-500 text-xs">Juntos desde 10/08/2025</p>
       </div>
 
-      {/* Linha do Tempo */}
       <div className="relative border-l-2 border-slate-800 ml-4 space-y-12">
         {eventos.map((evento, index) => (
           <div key={index} className="relative pl-8">

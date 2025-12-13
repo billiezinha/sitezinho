@@ -1,17 +1,10 @@
 import { useState, useEffect } from 'react'
-import { MapPin, Music, Heart, Smile, Frown, HelpCircle, Ticket } from 'lucide-react'
-// ADICIONEI 'auth' AQUI NAS IMPORTAÇÕES
+import { MapPin, Music, Heart, Smile, Frown, Ticket } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 
 export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
-  
-  // --- CORREÇÃO 1: ADICIONEI OS ESTADOS DO QUIZ QUE FALTAVAM ---
-  const [respostaQuiz, setRespostaQuiz] = useState('')
-  const [resultadoQuiz, setResultadoQuiz] = useState(null)
-
-  // Cupons vindos do Firebase
   const [cuponsUsados, setCuponsUsados] = useState([])
 
   // Cartas disponíveis
@@ -56,9 +49,8 @@ export default function Home() {
           text: texto,
           createdAt: serverTimestamp(),
           user: 'sistema',
-          // CORREÇÃO 2: USANDO O ID DO USUÁRIO LOGADO (auth)
           senderId: auth.currentUser?.uid, 
-          userName: auth.currentUser?.displayName, // Opcional: mostra quem usou
+          userName: auth.currentUser?.displayName,
           isSystem: true
         })
       } catch (error) {
@@ -83,18 +75,7 @@ export default function Home() {
     }
   }
 
-  // --- CORREÇÃO 3: ADICIONEI A FUNÇÃO DO QUIZ QUE FALTAVA ---
-  const verificarQuiz = () => {
-    // Mude "pizza" para a resposta certa (tudo minúsculo para facilitar)
-    if (respostaQuiz.toLowerCase().includes("pizza")) { 
-      setResultadoQuiz("Acertou! 🍕 Eu sabia que você me conhecia!")
-      notificarNoChat("🧠 Acertei o Quiz sobre sua comida favorita! 🍕")
-    } else {
-      setResultadoQuiz("Errado! 😱 Tente de novo!")
-    }
-  }
-
-  // 5. AÇÃO: Abrir Carta
+  // 4. AÇÃO: Abrir Carta
   const abrirCarta = (tipo, texto) => {
     setMensagemAtiva(texto)
   }
@@ -114,11 +95,11 @@ export default function Home() {
       <div className="w-full max-w-sm bg-slate-900 rounded-xl border border-slate-800 p-4 shadow-lg">
         <div className="flex items-center gap-2 mb-3 text-slate-300">
           <Music size={18} className="text-green-400" />
-          <span className="font-bold text-sm">Nossa Trilha Sonora</span>
+          <span className="font-bold text-sm">As músicas que me fazem pensar em você</span>
         </div>
         <iframe 
           style={{borderRadius: '12px'}} 
-          src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator" 
+          src="https://open.spotify.com/embed/playlist/3lOVuBQtMtSee3LKsaE4FU?utm_source=generator" 
           width="100%" 
           height="80" 
           frameBorder="0" 
@@ -136,7 +117,7 @@ export default function Home() {
         </div>
         <div className="w-full h-48 bg-slate-800 rounded-xl overflow-hiddenHJ border border-slate-700 shadow-lg relative">
           <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.1975778877!2d-46.6520!3d-23.5620!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDMzJzQzLjIiUyA0NsKwMzknMDcuMiJX!5e0!3m2!1sen!2sbr!4v1600000000000!5m2!1sen!2sbr" 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253471.34840566776!2d-41.80557901985172!3d-6.9514019598709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x79c11a9cb386921%3A0xa1b5d1d3ae190b21!2sPiau%C3%AD%20Shopping%20Center!5e0!3m2!1spt-BR!2sbr!4v1765646540771!5m2!1spt-BR!2sbr" 
             width="100%" 
             height="100%" 
             style={{border:0}} 
@@ -208,36 +189,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Mini Quiz */}
-      <div className="w-full max-w-sm bg-slate-900 p-5 rounded-xl border border-slate-800">
-        <div className="flex items-center gap-2 mb-3">
-          <HelpCircle size={18} className="text-blue-400" />
-          <h3 className="text-white font-bold">Quiz Rápido</h3>
-        </div>
-        <p className="text-slate-400 text-sm mb-3">Qual é a minha comida favorita?</p>
-        
-        <div className="flex gap-2">
-          <input 
-            type="text" 
-            placeholder="Sua resposta..."
-            value={respostaQuiz}
-            onChange={(e) => setRespostaQuiz(e.target.value)}
-            className="flex-1 bg-slate-950 border border-slate-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition"
-          />
-          <button 
-            onClick={verificarQuiz}
-            className="bg-blue-600 text-white px-4 rounded-lg text-sm font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-900/30"
-          >
-            ?
-          </button>
-        </div>
-        {resultadoQuiz && (
-          <p className="mt-3 text-sm text-center font-bold text-slate-200 animate-bounce">
-            {resultadoQuiz}
-          </p>
-        )}
       </div>
 
     </div>

@@ -3,6 +3,7 @@ import kiss from '../assets/kiss.jpeg'
 import wicked from '../assets/wicked.jpeg'
 import camisas from '../assets/camisas.jpeg'
 import formatura from '../assets/formei.jpeg'
+import alianças from '../assets/alianças.jpeg' 
 
 export default function Gallery() {
   const fotos = [
@@ -30,6 +31,12 @@ export default function Gallery() {
       legenda: 'formeiiii',
       rotacao: '-rotate-2'
     },
+    { 
+      id: 5, 
+      url: alianças, 
+      legenda: 'Escreva sua legenda aqui ❤️', // Mude a legenda aqui
+      rotacao: 'rotate-1'
+    },
   ]
 
   return (
@@ -47,7 +54,7 @@ export default function Gallery() {
             key={foto.id} 
             className={`relative group bg-white p-4 pb-12 shadow-2xl transition duration-500 hover:scale-105 hover:rotate-0 hover:z-10 ${foto.rotacao}`}
           >
-            {/* O "Prendedor" ou Fita adesiva (detalhe visual) */}
+            {/* O "Prendedor" ou Fita adesiva */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-pink-500/20 backdrop-blur-sm rotate-1 shadow-sm border border-white/20"></div>
 
             {/* A Imagem */}
