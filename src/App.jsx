@@ -1,26 +1,24 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Heart, Calendar, Image, MessageCircle } from 'lucide-react'
+import { Heart, Calendar, Image, MessageCircle, LogOut } from 'lucide-react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
-import { db } from './lib/firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { db, auth } from './lib/firebase'
 
 import Home from './pages/Home'
 import Timeline from './pages/Timeline'
 import Gallery from './pages/Gallery'
 import Chat from './pages/Chat'
+import Login from './pages/Login'
 
 // --- Controlador de Notificações Inteligente ---
-function NotificationController() {
+function NotificationController({ user }) {
   useEffect(() => {
-    // 1. Pedir permissão
     if ('Notification' in window && Notification.permission !== 'granted') {
       Notification.requestPermission()
     }
 
-    // Recupera o MEU ID para não me notificar das minhas próprias ações
-    const myId = localStorage.getItem('chat_device_id')
-
-    // 2. Monitorar últimas mensagens
+    // Monitorar chat em tempo real
     const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -31,26 +29,18 @@ function NotificationController() {
           // Verifica se é recente (menos de 5s atrás)
           const isRecent = data.createdAt && (Date.now() - data.createdAt.toMillis() < 5000)
           
-          // Verifica se NÃO fui eu quem mandou
-          const isFromOthers = data.senderId !== myId
+          // Verifica se NÃO fui eu quem mandou (comparando UIDs)
+          const isFromOthers = data.senderId !== user.uid
 
           if (isRecent && isFromOthers && Notification.permission === "granted") {
-            
-            // Personaliza o título e ícone
-            let title = "💌 Nova Mensagem!"
-            let body = data.text
-            let icon = "/vite.svg"
+            let title = `💌 ${data.userName || 'Amor'} diz:`
+            if (data.isSystem) title = "✨ Novidade no App!"
 
-            if (data.isSystem) {
-              title = "✨ Novidade no App!" // Para Cupons, Quiz, etc.
-            }
-
-            // Dispara a notificação do sistema/celular
             new Notification(title, {
-              body: body,
-              icon: icon,
+              body: data.text,
+              icon: '/vite.svg',
               vibrate: [200, 100, 200],
-              tag: 'chat-msg' // Evita spam de notificações acumuladas
+              tag: 'chat-msg'
             })
           }
         }
@@ -58,7 +48,7 @@ function NotificationController() {
     })
 
     return () => unsubscribe()
-  }, [])
+  }, [user])
 
   return null
 }
@@ -95,10 +85,39 @@ function Navigation() {
 
 // --- App Principal ---
 export default function App() {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Ouve se o usuário entrou ou saiu
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser)
+      setLoading(false)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-pink-500">Carregando...</div>
+
+  // Se não tiver usuário, mostra LOGIN
+  if (!user) return <Login />
+
+  // Se tiver usuário, mostra o APP
   return (
     <BrowserRouter>
-      <NotificationController />
-      <div className="max-w-md mx-auto min-h-screen bg-slate-950">
+      <NotificationController user={user} />
+      
+      <div className="max-w-md mx-auto min-h-screen bg-slate-950 relative">
+        
+        {/* Botão Sair (Opcional, fica no topo) */}
+        <button 
+          onClick={() => signOut(auth)} 
+          className="absolute top-4 right-4 z-50 text-slate-600 hover:text-red-500"
+          title="Sair"
+        >
+          <LogOut size={20} />
+        </button>
+
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/timeline" element={<Timeline />} />
