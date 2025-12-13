@@ -11,6 +11,7 @@ import Gallery from './pages/Gallery'
 import Chat from './pages/Chat'
 import Login from './pages/Login'
 
+// --- Controlador de Notificações ---
 function NotificationController({ user }) {
   const [permission, setPermission] = useState(Notification.permission)
 
@@ -19,17 +20,13 @@ function NotificationController({ user }) {
     setPermission(result)
     
     if (result === 'granted') {
-      // Teste imediato usando o Service Worker
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification("🔔 Teste de Notificação", {
-            body: "Se apareceu na barra, funcionou!",
-            icon: '/pwa-192x192.png',
-            vibrate: [200, 100, 200]
+          registration.showNotification("🔔 Notificações Ativas", {
+            body: "Agora as mensagens vão acumular aqui!",
+            icon: '/pwa-192x192.png'
           })
         })
-      } else {
-        new Notification("🔔 Teste", { body: "Funcionando!" })
       }
     }
   }
@@ -37,10 +34,12 @@ function NotificationController({ user }) {
   useEffect(() => {
     if (!user) return
 
-    const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(1))
+    // MUDANÇA 1: Aumentei o limite para 10 para pegar rajadas de mensagens
+    const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(10))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
+      // Pega as mudanças na ordem inversa para notificar na ordem certa se chegarem juntas
+      snapshot.docChanges().reverse().forEach((change) => {
         if (change.type === "added") {
           const data = change.doc.data()
           if (!data.createdAt) return 
@@ -53,23 +52,24 @@ function NotificationController({ user }) {
             if (data.isSystem) title = "✨ Novidade no App!"
             if (data.userName) title = `💌 ${data.userName}`
 
-            // Força a vibração via hardware (redundância)
+            // Vibração
             try { navigator.vibrate([200, 100, 200]); } catch(e){}
 
-            // AQUI ESTÁ O TRUQUE: Usa o Service Worker para exibir na barra
+            // Dispara a notificação
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.ready.then(registration => {
                 registration.showNotification(title, {
                   body: data.text,
-                  icon: '/pwa-192x192.png', // Usa o ícone do app
-                  badge: '/vite.svg',       // Ícone pequeno monocromático (opcional)
+                  icon: '/pwa-192x192.png',
+                  badge: '/vite.svg',
                   vibrate: [200, 100, 200],
-                  tag: 'chat-msg',
-                  renotify: true            // Força vibrar mesmo se já tiver notificação
+                  // MUDANÇA 2: Removi a 'tag' para as mensagens não se substituírem
+                  // Adicionei um timestamp no tag para garantir que sejam únicas
+                  tag: 'msg-' + change.doc.id, 
+                  renotify: true
                 })
               })
             } else {
-              // Fallback para PC
               new Notification(title, {
                 body: data.text,
                 icon: '/vite.svg'
