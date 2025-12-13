@@ -1,6 +1,31 @@
-import { Heart, Plane, Star, Gift } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Heart, Plane, Star, Gift, Clock } from 'lucide-react'
 
 export default function Timeline() {
+  // --- Lógica do Contador (Trazida da Home) ---
+  const [tempo, setTempo] = useState({ anos: 0, meses: 0, dias: 0 })
+  const dataInicio = new Date(2025, 7, 10) // 10 de Agosto de 2025
+
+  useEffect(() => {
+    const calcularTempo = () => {
+      const agora = new Date()
+      const diferenca = agora - dataInicio
+      if (diferenca < 0) {
+        setTempo({ anos: 0, meses: 0, dias: 0 })
+        return
+      }
+      const diasTotais = Math.floor(diferenca / (1000 * 60 * 60 * 24))
+      const anos = Math.floor(diasTotais / 365)
+      const meses = Math.floor((diasTotais % 365) / 30)
+      const dias = (diasTotais % 365) % 30
+      setTempo({ anos, meses, dias })
+    }
+    calcularTempo()
+    const timer = setInterval(calcularTempo, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // --- Eventos da Lista ---
   const eventos = [
     { 
       data: '10 Ago 2025', 
@@ -34,16 +59,33 @@ export default function Timeline() {
 
   return (
     <div className="p-6 pb-24 min-h-screen bg-slate-950">
-      <h1 className="text-3xl font-bold text-center text-white mb-8">Nossa Jornada 🚀</h1>
+      
+      {/* Cabeçalho com o Contador */}
+      <div className="flex flex-col items-center mb-12">
+        <h1 className="text-3xl font-bold text-center text-white mb-6">Nossa História ⏳</h1>
+        
+        <div className="flex gap-4 mb-4">
+          <div className="bg-slate-900 p-3 rounded-xl border border-pink-500/30 min-w-[70px] text-center">
+            <span className="block text-2xl font-bold text-white">{tempo.anos}</span>
+            <span className="text-[10px] text-pink-400 uppercase">Anos</span>
+          </div>
+          <div className="bg-slate-900 p-3 rounded-xl border border-pink-500/30 min-w-[70px] text-center">
+            <span className="block text-2xl font-bold text-white">{tempo.meses}</span>
+            <span className="text-[10px] text-pink-400 uppercase">Meses</span>
+          </div>
+          <div className="bg-slate-900 p-3 rounded-xl border border-pink-500/30 min-w-[70px] text-center">
+            <span className="block text-2xl font-bold text-white">{tempo.dias}</span>
+            <span className="text-[10px] text-pink-400 uppercase">Dias</span>
+          </div>
+        </div>
+        <p className="text-slate-500 text-xs">Juntos desde 10/08/2025</p>
+      </div>
 
+      {/* Linha do Tempo */}
       <div className="relative border-l-2 border-slate-800 ml-4 space-y-12">
         {eventos.map((evento, index) => (
           <div key={index} className="relative pl-8">
-            
-            {/* Bolinha Brilhante */}
             <div className={`absolute -left-[11px] top-0 w-5 h-5 rounded-full border-2 border-slate-950 ${evento.cor}`}></div>
-
-            {/* Cartão Escuro */}
             <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-800 px-2 py-1 rounded">
@@ -51,7 +93,6 @@ export default function Timeline() {
                 </span>
                 <evento.icon size={20} className="text-slate-500" />
               </div>
-              
               <h3 className="text-xl font-bold text-slate-100">{evento.titulo}</h3>
               <p className="text-slate-400 mt-2 text-sm leading-relaxed">
                 {evento.descricao}
