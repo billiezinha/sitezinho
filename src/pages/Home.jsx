@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
 import { MapPin, Music, Heart, Smile, Frown, HelpCircle, Ticket } from 'lucide-react'
-import { db } from '../lib/firebase'
+// ADICIONEI 'auth' AQUI NAS IMPORTAÇÕES
+import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 
 export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
   
+  // --- CORREÇÃO 1: ADICIONEI OS ESTADOS DO QUIZ QUE FALTAVAM ---
+  const [respostaQuiz, setRespostaQuiz] = useState('')
+  const [resultadoQuiz, setResultadoQuiz] = useState(null)
 
   // Cupons vindos do Firebase
   const [cuponsUsados, setCuponsUsados] = useState([])
@@ -14,7 +18,7 @@ export default function Home() {
   const mensagens = {
     saudade: "Quando a saudade apertar, lembre-se que estou a apenas uma mensagem de distância. Te amo muito! ❤️",
     estresse: "Respire fundo... conte até 10. Você é incrível e consegue resolver qualquer coisa. Estou orgulhoso de você! 🌟",
-    rir: "Dizem que a gravidade é apenas uma teoria... até o dia em que aquela cadeira decidiu provar que a lei é implacável com você!🪑"
+    rir: "Dizem que a gravidade é apenas uma teoria... até o dia em que aquela cadeira decidiu provar que a lei é implacável com você! 🪑"
   }
 
   // Lista de Cupons
@@ -28,7 +32,6 @@ export default function Home() {
   useEffect(() => {
     const docRef = doc(db, "appData", "shared")
     
-    // Criar o documento se não existir
     const checkDoc = async () => {
       const snap = await getDoc(docRef)
       if (!snap.exists()) {
@@ -37,7 +40,6 @@ export default function Home() {
     }
     checkDoc()
 
-    // Ouvir mudanças em tempo real
     const unsubscribe = onSnapshot(docRef, (doc) => {
       if (doc.exists()) {
         setCuponsUsados(doc.data().cuponsUsados || [])
@@ -54,7 +56,9 @@ export default function Home() {
           text: texto,
           createdAt: serverTimestamp(),
           user: 'sistema',
-          senderId: meuId, // <--- ADICIONE ISTO: Envia seu ID para não se auto-notificar
+          // CORREÇÃO 2: USANDO O ID DO USUÁRIO LOGADO (auth)
+          senderId: auth.currentUser?.uid, 
+          userName: auth.currentUser?.displayName, // Opcional: mostra quem usou
           isSystem: true
         })
       } catch (error) {
@@ -68,11 +72,9 @@ export default function Home() {
       if(window.confirm(`Tem certeza que quer gastar o "${text}" agora?`)) {
         try {
           const docRef = doc(db, "appData", "shared")
-          // Salva no banco
           await updateDoc(docRef, {
             cuponsUsados: arrayUnion(id)
           })
-          // Notifica o outro
           await notificarNoChat(`🎟️ Amor! Acabei de usar o cupom: ${text}`)
         } catch (error) {
           console.error("Erro ao usar cupom:", error)
@@ -81,13 +83,20 @@ export default function Home() {
     }
   }
 
+  // --- CORREÇÃO 3: ADICIONEI A FUNÇÃO DO QUIZ QUE FALTAVA ---
+  const verificarQuiz = () => {
+    // Mude "pizza" para a resposta certa (tudo minúsculo para facilitar)
+    if (respostaQuiz.toLowerCase().includes("pizza")) { 
+      setResultadoQuiz("Acertou! 🍕 Eu sabia que você me conhecia!")
+      notificarNoChat("🧠 Acertei o Quiz sobre sua comida favorita! 🍕")
+    } else {
+      setResultadoQuiz("Errado! 😱 Tente de novo!")
+    }
+  }
 
-
-  // 5. AÇÃO: Abrir Carta (Opcional notificar)
+  // 5. AÇÃO: Abrir Carta
   const abrirCarta = (tipo, texto) => {
     setMensagemAtiva(texto)
-    // Descomente a linha abaixo se quiser notificar quando abrir a carta também
-    // notificarNoChat(`💌 Abri a carta de '${tipo}' para me sentir melhor.`)
   }
 
   return (
@@ -96,9 +105,9 @@ export default function Home() {
       {/* Título */}
       <div className="text-center mt-4">
         <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 drop-shadow-[0_0_10px_rgba(236,72,153,0.5)]">
-          Para Billiezinha
+          Para Wesley
         </h1>
-        <p className="text-slate-400 text-sm mt-2">Bem-vindo ao seu mundo ❤️</p>
+        <p className="text-slate-400 text-sm mt-2">Bem-vindo ao nosso mundinho ♡</p>
       </div>
 
       {/* Playlist */}
