@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Heart, Calendar, Image, MessageCircle } from 'lucide-react'
 
-// Importando as páginas
 import Home from './pages/Home'
 import Timeline from './pages/Timeline'
 import Gallery from './pages/Gallery'
@@ -9,11 +8,13 @@ import Chat from './pages/Chat'
 
 function Navigation() {
   const location = useLocation();
+  
+  // Neon Pink para o ativo, Cinza escuro para inativo
   const getClass = (path) => 
-    `flex flex-col items-center justify-center w-full h-full ${location.pathname === path ? "text-pink-600" : "text-gray-400"}`;
+    `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${location.pathname === path ? "text-pink-500 scale-110 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]" : "text-slate-600 hover:text-slate-400"}`;
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 h-16 shadow-lg z-50">
+    <nav className="fixed bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur-md border-t border-slate-800 h-16 z-50">
       <div className="flex justify-around items-center h-full max-w-md mx-auto">
         <Link to="/" className={getClass("/")}>
           <Heart size={24} fill={location.pathname === "/" ? "currentColor" : "none"} />
@@ -39,7 +40,7 @@ function Navigation() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="max-w-md mx-auto min-h-screen bg-pink-50">
+      <div className="max-w-md mx-auto min-h-screen bg-slate-950">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/timeline" element={<Timeline />} />
