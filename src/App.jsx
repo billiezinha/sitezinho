@@ -11,25 +11,32 @@ import Gallery from './pages/Gallery'
 import Chat from './pages/Chat'
 import Login from './pages/Login'
 
-// --- Controlador de Notificações (MODO TESTE TOTAL) ---
 function NotificationController({ user }) {
   const [permission, setPermission] = useState(Notification.permission)
 
   const requestPermission = async () => {
     const result = await Notification.requestPermission()
     setPermission(result)
+    
     if (result === 'granted') {
-      new Notification("🔔 Teste de Som", {
-        body: "Se leu isso, a permissão está OK!",
-        icon: '/vite.svg'
-      })
+      // Teste imediato usando o Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification("🔔 Teste de Notificação", {
+            body: "Se apareceu na barra, funcionou!",
+            icon: '/pwa-192x192.png',
+            vibrate: [200, 100, 200]
+          })
+        })
+      } else {
+        new Notification("🔔 Teste", { body: "Funcionando!" })
+      }
     }
   }
 
   useEffect(() => {
     if (!user) return
 
-    // Monitora a última mensagem do chat
     const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -38,25 +45,36 @@ function NotificationController({ user }) {
           const data = change.doc.data()
           if (!data.createdAt) return 
 
-          // AJUSTE 1: Aumentei o tempo para 60 segundos (ajuda se a internet for lenta)
+          // Aceita mensagens de até 1 minuto atrás
           const isRecent = (Date.now() - data.createdAt.toMillis() < 60000)
-          
-          // AJUSTE 2: REMOVI a verificação de ID (isFromOthers). 
-          // Agora notifica TUDO, mesmo se for você mesmo mandando com a mesma conta.
           
           if (isRecent && Notification.permission === "granted") {
             let title = `💌 Nova Mensagem`
             if (data.isSystem) title = "✨ Novidade no App!"
-            if (data.userName) title = `💌 ${data.userName} falou:`
+            if (data.userName) title = `💌 ${data.userName}`
 
-            // Tenta vibrar o celular
+            // Força a vibração via hardware (redundância)
             try { navigator.vibrate([200, 100, 200]); } catch(e){}
 
-            new Notification(title, {
-              body: data.text,
-              icon: '/vite.svg',
-              tag: 'chat-msg' // Evita acumular
-            })
+            // AQUI ESTÁ O TRUQUE: Usa o Service Worker para exibir na barra
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, {
+                  body: data.text,
+                  icon: '/pwa-192x192.png', // Usa o ícone do app
+                  badge: '/vite.svg',       // Ícone pequeno monocromático (opcional)
+                  vibrate: [200, 100, 200],
+                  tag: 'chat-msg',
+                  renotify: true            // Força vibrar mesmo se já tiver notificação
+                })
+              })
+            } else {
+              // Fallback para PC
+              new Notification(title, {
+                body: data.text,
+                icon: '/vite.svg'
+              })
+            }
           }
         }
       })
@@ -65,7 +83,6 @@ function NotificationController({ user }) {
     return () => unsubscribe()
   }, [user])
 
-  // Se não tem permissão, mostra botão vermelho para ativar
   if (permission !== 'granted') {
     return (
       <button 
