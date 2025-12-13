@@ -68,7 +68,20 @@ export default function Chat() {
               </div>
             )
           }
-
+{/* Botão de Teste Provisório */}
+<button 
+  onClick={() => {
+    if (Notification.permission === 'granted') {
+      new Notification("🔔 Teste", { body: "Se você leu isso, está funcionando!", icon: '/vite.svg' });
+    } else {
+      alert("Permissão não concedida! Verifique as config do celular.");
+      Notification.requestPermission();
+    }
+  }}
+  className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 px-2 py-1 rounded"
+>
+  Testar Som
+</button>
           return (
             <div key={msg.id} className={`flex gap-2 ${isMinha ? 'flex-row-reverse' : 'flex-row'}`}>
               
