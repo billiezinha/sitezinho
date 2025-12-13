@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Heart, Calendar, Image, MessageCircle, LogOut, Bell } from 'lucide-react'
+import { Heart, Calendar, Image, LogOut, Bell, Feather } from 'lucide-react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
@@ -8,10 +8,10 @@ import { db, auth } from './lib/firebase'
 import Home from './pages/Home'
 import Timeline from './pages/Timeline'
 import Gallery from './pages/Gallery'
-import Chat from './pages/Chat'
+import Poems from './pages/Poems'
 import Login from './pages/Login'
 
-// --- Controlador de Notificações ---
+// --- Controlador de Notificações (Focado em Poemas) ---
 function NotificationController({ user }) {
   const [permission, setPermission] = useState(Notification.permission)
 
@@ -23,7 +23,7 @@ function NotificationController({ user }) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
           registration.showNotification("🔔 Notificações Ativas", {
-            body: "Agora as mensagens vão acumular aqui!",
+            body: "Você saberá quando um novo poema chegar.",
             icon: '/pwa-192x192.png'
           })
         })
@@ -34,46 +34,40 @@ function NotificationController({ user }) {
   useEffect(() => {
     if (!user) return
 
-    // MUDANÇA 1: Aumentei o limite para 10 para pegar rajadas de mensagens
-    const q = query(collection(db, "chats"), orderBy("createdAt", "desc"), limit(10))
+    // MUDANÇA: Agora ouvimos a coleção "poems" em vez de "chats"
+    const q = query(collection(db, "poems"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      // Pega as mudanças na ordem inversa para notificar na ordem certa se chegarem juntas
-      snapshot.docChanges().reverse().forEach((change) => {
+      snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
           const data = change.doc.data()
           if (!data.createdAt) return 
 
-          // Aceita mensagens de até 1 minuto atrás
+          // Verifica se é recente (últimos 60s)
           const isRecent = (Date.now() - data.createdAt.toMillis() < 60000)
           
-          if (isRecent && Notification.permission === "granted") {
-            let title = `💌 Nova Mensagem`
-            if (data.isSystem) title = "✨ Novidade no App!"
-            if (data.userName) title = `💌 ${data.userName}`
+          // Verifica se NÃO fui eu quem escreveu (para não notificar quem postou)
+          // Se quiser testar sozinho, comente a linha abaixo:
+          const isFromOthers = data.senderId !== user.uid
 
-            // Vibração
+          if (isRecent && isFromOthers && Notification.permission === "granted") {
+            const title = `📜 Novo Poema: ${data.titulo}`
+            const body = "Toque para ler as palavras do meu coração..."
+
             try { navigator.vibrate([200, 100, 200]); } catch(e){}
 
-            // Dispara a notificação
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.ready.then(registration => {
                 registration.showNotification(title, {
-                  body: data.text,
+                  body: body,
                   icon: '/pwa-192x192.png',
                   badge: '/vite.svg',
-                  vibrate: [200, 100, 200],
-                  // MUDANÇA 2: Removi a 'tag' para as mensagens não se substituírem
-                  // Adicionei um timestamp no tag para garantir que sejam únicas
-                  tag: 'msg-' + change.doc.id, 
-                  renotify: true
+                  tag: 'new-poem',
+                  data: { url: '/poems' } // Metadado para futuro clique
                 })
               })
             } else {
-              new Notification(title, {
-                body: data.text,
-                icon: '/vite.svg'
-              })
+              new Notification(title, { body, icon: '/vite.svg' })
             }
           }
         }
@@ -87,9 +81,10 @@ function NotificationController({ user }) {
     return (
       <button 
         onClick={requestPermission}
-        className="fixed top-24 left-4 z-50 bg-red-600 text-white p-4 rounded-full shadow-2xl animate-bounce border-4 border-white"
+        className="fixed top-24 left-4 z-50 bg-pink-600 text-white p-3 rounded-full shadow-lg animate-bounce border-2 border-white"
+        title="Ativar Notificações de Poemas"
       >
-        <Bell size={32} />
+        <Bell size={24} fill="currentColor" />
       </button>
     )
   }
@@ -97,7 +92,7 @@ function NotificationController({ user }) {
   return null
 }
 
-// --- Menu de Navegação ---
+// --- Navegação ---
 function Navigation() {
   const location = useLocation();
   const getClass = (path) => 
@@ -118,9 +113,9 @@ function Navigation() {
           <Image size={24} />
           <span className="text-[10px] mt-1 font-medium">Fotos</span>
         </Link>
-        <Link to="/chat" className={getClass("/chat")}>
-          <MessageCircle size={24} />
-          <span className="text-[10px] mt-1 font-medium">Chat</span>
+        <Link to="/poems" className={getClass("/poems")}>
+          <Feather size={24} />
+          <span className="text-[10px] mt-1 font-medium">Poemas</span>
         </Link>
       </div>
     </nav>
@@ -160,7 +155,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/gallery" element={<Gallery />} />
-          <Route path="/chat" element={<Chat />} />
+          <Route path="/poems" element={<Poems />} />
         </Routes>
         <Navigation />
       </div>
