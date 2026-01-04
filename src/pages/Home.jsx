@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw } from 'lucide-react'
+import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 
@@ -17,9 +17,13 @@ export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
   const [cuponsUsados, setCuponsUsados] = useState([])
   
-  // Estados do Potinho
+  // Estados do Potinho e Motivos
   const [ideiaDate, setIdeiaDate] = useState(null)
   const [animandoPotinho, setAnimandoPotinho] = useState(false)
+  const [motivoAtual, setMotivoAtual] = useState("Clique para ver um motivo ❤️")
+  
+  // Estado do Cronômetro
+  const [tempoJuntos, setTempoJuntos] = useState({ anos: 0, meses: 0, dias: 0, horas: 0, minutos: 0, segundos: 0 })
 
   const mensagens = {
     saudade: "Quando a saudade apertar, lembre-se que estou a apenas uma mensagem de distância. Te amo muito! ❤️",
@@ -27,12 +31,12 @@ export default function Home() {
     rir: "Dizem que a gravidade é apenas uma teoria... até o dia em que aquela cadeira decidiu provar que a lei é implacável com você! 🪑"
   }
 
-  // --- LISTA DE IDEIAS ATUALIZADA (Sem jogos de tabuleiro, com mais opções) ---
+  // --- LISTAS ---
   const ideiasEncontro = [
     "🍕 Noite de Pizza e Vinho em casa",
     "🍿 Maratona de filmes (Harry Potter?)",
     "🍳 Cozinhar uma receita nova juntos (Masterchef!)",
-    "🧺 Piquenique na sala de estar (com toalha no chão e tudo!)",
+    "🧺 Piquenique na sala de estar",
     "🎮 Campeonato de Video Game valendo massagem",
     "🚶‍♂️ Caminhada no fim de tarde para ver o pôr do sol",
     "🍔 Ir naquela hamburgueria que a gente gosta",
@@ -40,10 +44,23 @@ export default function Home() {
     "🛁 Banho relaxante ou Spa Day em casa",
     "🎤 Noite de Karaokê (vale cantar mal!)",
     "🍫 Noite de Fondue (queijo ou chocolate)",
-    "🍹 Criar nossos próprios drinks (ou milkshakes)",
+    "🍹 Criar nossos próprios drinks",
     "🎨 Pintar ou desenhar algo juntos",
     "🔭 Deitar e ver as estrelas",
-    "🥞 Café da manhã no jantar (Panquecas à noite!)"
+    "🥞 Café da manhã no jantar (Panquecas!)"
+  ]
+
+  const motivosAmor = [
+    "Pelo seu sorriso que ilumina meu dia",
+    "Pela forma como você me apoia nos meus sonhos",
+    "Pelo seu abraço que é meu lugar seguro",
+    "Por você ser meu melhor amigo",
+    "Pelas nossas risadas aleatórias",
+    "Por você me fazer querer ser alguém melhor",
+    "Pelo jeito que você cuida de mim",
+    "Por aguentar minhas loucuras",
+    "Pela nossa conexão única",
+    "Simplesmente por você existir!"
   ]
 
   const listaCupons = [
@@ -73,18 +90,21 @@ export default function Home() {
     }
   }
 
-  // Função para sortear encontro
+  // --- FUNÇÕES ---
   const tirarPapelzinho = () => {
     if (animandoPotinho) return
     setAnimandoPotinho(true)
-    setIdeiaDate(null) // Limpa o anterior para dar suspense
-
-    // Simula o tempo de "agitar" o potinho
+    setIdeiaDate(null) 
     setTimeout(() => {
       const aleatorio = ideiasEncontro[Math.floor(Math.random() * ideiasEncontro.length)]
       setIdeiaDate(aleatorio)
       setAnimandoPotinho(false)
     }, 1500)
+  }
+
+  const gerarMotivo = () => {
+    const aleatorio = motivosAmor[Math.floor(Math.random() * motivosAmor.length)]
+    setMotivoAtual(aleatorio)
   }
 
   const enviarNotificacao = async (titulo, texto) => {
@@ -95,7 +115,32 @@ export default function Home() {
     } catch (error) { console.error("Erro ao notificar:", error) }
   }
 
-  // --- LÓGICA DE RENOVAÇÃO (DIA 13) ---
+  // --- EFEITOS (Renovação e Cronômetro) ---
+  
+  // 1. CRONÔMETRO DE TEMPO JUNTOS (ATUALIZADO 2025)
+  useEffect(() => {
+    // Definido para 10 de Agosto de 2025 às 20:15
+    const dataInicioNamoro = new Date("2025-08-10T20:15:00") 
+
+    const timer = setInterval(() => {
+      const agora = new Date()
+      // Se a data atual for anterior ao início (caso teste antes da data), zera a diferença
+      const diferenca = Math.max(0, agora - dataInicioNamoro)
+
+      const anos = Math.floor(diferenca / (1000 * 60 * 60 * 24 * 365))
+      const meses = Math.floor((diferenca % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30))
+      const dias = Math.floor((diferenca % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24))
+      const horas = Math.floor((diferenca % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutos = Math.floor((diferenca % (1000 * 60 * 60)) / (1000 * 60))
+      const segundos = Math.floor((diferenca % (1000 * 60)) / 1000)
+
+      setTempoJuntos({ anos, meses, dias, horas, minutos, segundos })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  // 2. RENOVAÇÃO DE CUPONS (MANTIDO DIA 13)
   useEffect(() => {
     const docRef = doc(db, "appData", "shared")
     const checkAndResetCoupons = async () => {
@@ -108,13 +153,15 @@ export default function Home() {
       const lastReset = data.lastReset ? data.lastReset.toDate() : null
       const now = new Date()
       let cicloAtualInicio = new Date(now)
+      
+      // Lógica do dia 13 (Pedido de Namoro)
       if (now.getDate() < 13) { cicloAtualInicio.setMonth(cicloAtualInicio.getMonth() - 1) }
       cicloAtualInicio.setDate(13)
       cicloAtualInicio.setHours(0, 0, 0, 0)
 
       if (!lastReset || lastReset < cicloAtualInicio) {
         await updateDoc(docRef, { cuponsUsados: [], lastReset: serverTimestamp() })
-        await enviarNotificacao("🔄 Cupons Renovados!", "Hoje é nosso dia! Seus cupons mensais foram renovados. Aproveite seus mimos! ❤️")
+        await enviarNotificacao("🔄 Cupons Renovados!", "Hoje é dia 13! Nossos cupons mensais foram renovados. Aproveite! ❤️")
       }
     }
     checkAndResetCoupons()
@@ -149,6 +196,40 @@ export default function Home() {
           <div className="h-0.5 w-16 bg-passion/30 mx-auto mt-4 rounded-full"></div>
         </div>
 
+        {/* --- CRONÔMETRO DO AMOR --- */}
+        <div className="bg-passion text-white p-6 rounded-lg shadow-inner relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 opacity-10"><Clock size={100} /></div>
+          <h3 className="text-lg font-serif italic mb-4 flex items-center gap-2 relative z-10">
+            <Clock size={18} /> Tempo juntos
+          </h3>
+          <div className="grid grid-cols-3 gap-2 text-center relative z-10">
+            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+              <span className="block text-2xl font-bold">{tempoJuntos.anos}</span>
+              <span className="text-[10px] uppercase tracking-wider opacity-80">Anos</span>
+            </div>
+            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+              <span className="block text-2xl font-bold">{tempoJuntos.meses}</span>
+              <span className="text-[10px] uppercase tracking-wider opacity-80">Meses</span>
+            </div>
+            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+              <span className="block text-2xl font-bold">{tempoJuntos.dias}</span>
+              <span className="text-[10px] uppercase tracking-wider opacity-80">Dias</span>
+            </div>
+            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+              <span className="block text-xl font-bold">{tempoJuntos.horas}</span>
+              <span className="text-[10px] uppercase tracking-wider opacity-80">Hrs</span>
+            </div>
+            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+              <span className="block text-xl font-bold">{tempoJuntos.minutos}</span>
+              <span className="text-[10px] uppercase tracking-wider opacity-80">Min</span>
+            </div>
+            <div className="bg-white/10 rounded p-2 backdrop-blur-sm animate-pulse">
+              <span className="block text-xl font-bold">{tempoJuntos.segundos}</span>
+              <span className="text-[10px] uppercase tracking-wider opacity-80">Seg</span>
+            </div>
+          </div>
+        </div>
+
         {/* Playlist */}
         <div className="space-y-3">
           <SectionHeader icon={Music} title="Nossa Trilha" />
@@ -169,6 +250,23 @@ export default function Home() {
               width="100%" height="100%" style={{border:0}} allowFullScreen="" loading="lazy"
               className="sepia contrast-125 w-full h-full"
             ></iframe>
+          </div>
+        </div>
+
+        {/* --- MOTIVOS PARA AMAR --- */}
+        <div className="space-y-4">
+          <SectionHeader icon={Star} title="Por que te amo?" />
+          <div 
+            onClick={gerarMotivo}
+            className="cursor-pointer bg-white border-2 border-passion/20 p-6 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95 group relative"
+          >
+            <Heart className="absolute top-4 right-4 text-passion/10 group-hover:text-passion/20 transition-colors" size={48} />
+            <p className="text-xl text-passion font-serif italic text-center pr-2">
+              "{motivoAtual}"
+            </p>
+            <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-widest font-bold">
+              Clique para ver outro
+            </p>
           </div>
         </div>
 
@@ -197,11 +295,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- POTINHO DE ENCONTROS --- */}
+        {/* Potinho de Encontros */}
         <div className="space-y-4">
           <SectionHeader icon={Lightbulb} title="O que vamos fazer?" />
           <div className="bg-passion/5 p-6 rounded-lg border-2 border-dashed border-passion/20 text-center relative overflow-hidden">
-            
             {!ideiaDate ? (
               <div className="space-y-4">
                 <p className="text-passion/70 font-serif italic">Sem ideias para hoje? Deixe o destino decidir!</p>
