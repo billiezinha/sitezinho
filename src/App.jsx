@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Heart, Calendar, Image, Feather, LogOut, Bell } from 'lucide-react'
+// Removi o 'Image' dos imports pois não será mais usado
+import { Heart, Calendar, Feather, LogOut, Bell } from 'lucide-react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
 
 import Home from './pages/Home'
 import Timeline from './pages/Timeline'
-import Gallery from './pages/Gallery'
+// import Gallery from './pages/Gallery' -> REMOVIDO
 import Poems from './pages/Poems'
 import Login from './pages/Login'
 
@@ -103,17 +104,14 @@ function Navigation() {
     <nav className="fixed bottom-0 left-0 w-full h-20 z-50 bg-passion shadow-[0_-4px_10px_rgba(0,0,0,0.3)] border-t border-white/10">
       <div className="flex justify-around items-center h-full max-w-md mx-auto pb-2">
         <Link to="/" className="flex flex-col items-center justify-center w-full group">
-          <Heart size={30} {...getIconStyle("/")} /> {/* Aumentei size para 30 */}
+          <Heart size={30} {...getIconStyle("/")} /> 
           <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Início</span>
         </Link>
         <Link to="/timeline" className="flex flex-col items-center justify-center w-full group">
           <Calendar size={30} {...getIconStyle("/timeline")} />
           <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Nós</span>
         </Link>
-        <Link to="/gallery" className="flex flex-col items-center justify-center w-full group">
-          <Image size={30} {...getIconStyle("/gallery")} />
-          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Fotos</span>
-        </Link>
+        {/* Link da Galeria REMOVIDO aqui */}
         <Link to="/poems" className="flex flex-col items-center justify-center w-full group">
           <Feather size={30} {...getIconStyle("/poems")} />
           <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Versos</span>
@@ -155,7 +153,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/timeline" element={<Timeline />} />
-          <Route path="/gallery" element={<Gallery />} />
+          {/* Rota da Galeria REMOVIDA aqui */}
           <Route path="/poems" element={<Poems />} />
         </Routes>
         <Navigation />

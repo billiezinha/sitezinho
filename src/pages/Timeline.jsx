@@ -1,137 +1,122 @@
-import { useEffect, useState } from 'react'
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore'
-import { db, auth } from '../lib/firebase'
-import { Calendar, Plus, Trash2, Heart } from 'lucide-react'
+import React from 'react'
+import { Heart, Calendar, Star, Music, Camera } from 'lucide-react'
+
+// Importando as imagens que você tem na pasta assets
+// Certifique-se de que os nomes dos arquivos estão exatos (maiúsculas/minúsculas importam)
+import imgKiss from '../assets/kiss.jpeg'
+import imgAliancas from '../assets/alianças.jpeg'
+import imgCamisas from '../assets/camisas.jpeg'
+import imgFormei from '../assets/formei.jpeg'
+import imgWicked from '../assets/wicked.jpeg'
 
 export default function Timeline() {
-  const [events, setEvents] = useState([])
-  const [newItem, setNewItem] = useState({ data: '', titulo: '', descricao: '' })
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    if (auth.currentUser) setIsAdmin(true)
-    // Trazemos tudo ordenado por createdAt para garantir a ordem de criação
-    const q = query(collection(db, "timeline"), orderBy("createdAt", "desc"))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-    })
-    return () => unsubscribe()
-  }, [])
-
-  const addEvent = async (e) => {
-    e.preventDefault()
-    if (!newItem.titulo || !newItem.data) return
-    await addDoc(collection(db, "timeline"), { 
-      data: newItem.data,          // Salva como 'data' (português)
-      titulo: newItem.titulo,      // Salva como 'titulo'
-      descricao: newItem.descricao, // Salva como 'descricao'
-      createdAt: serverTimestamp() 
-    })
-    setNewItem({ data: '', titulo: '', descricao: '' })
-  }
-
-  const deleteEvent = async (id) => {
-    if (window.confirm("Apagar essa memória?")) {
-      await deleteDoc(doc(db, "timeline", id))
+  // Lista de eventos da história de vocês
+  // Você pode alterar as datas e textos conforme a história real!
+  const eventos = [
+    {
+      id: 1,
+      date: "O Início",
+      title: "Onde tudo começou",
+      description: "Aquele primeiro beijo que mudou tudo. Sabia ali que seria especial.",
+      image: imgKiss,
+      icon: Heart
+    },
+    {
+      id: 2,
+      date: "Momentos Especiais",
+      title: "Nossas Camisas Combinando",
+      description: "Porque casal que combina look permanece unido! Um dia divertido e cheio de estilo.",
+      image: imgCamisas,
+      icon: Camera
+    },
+    {
+      id: 3,
+      date: "Conquistas",
+      title: "Sua Formatura",
+      description: "Ver você alcançar seus sonhos me enche de orgulho. Estarei sempre na primeira fila te aplaudindo.",
+      image: imgFormei,
+      icon: Star
+    },
+    {
+      id: 4,
+      date: "Diversão",
+      title: "Assistindo Wicked",
+      description: "Momentos mágicos e musicais. Defying gravity com você!",
+      image: imgWicked,
+      icon: Music
+    },
+    {
+      id: 5,
+      date: "Compromisso",
+      title: "Nossas Alianças",
+      description: "Um símbolo do nosso amor e de tudo que ainda vamos construir juntos. Te amo!",
+      image: imgAliancas,
+      icon: Heart
     }
-  }
-
-  // Função poderosa para formatar qualquer tipo de data
-  const formatarData = (val, criacao) => {
-    // 1. Tenta a data manual
-    if (val) {
-      if (val.toDate) return val.toDate().toLocaleDateString('pt-BR') // Se for timestamp
-      // Se for texto YYYY-MM-DD
-      try {
-        const partes = val.split('-')
-        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`
-      } catch(e) {}
-      return val // Retorna o texto original se não conseguir formatar
-    }
-    // 2. Se não tiver data manual, usa a data de criação do sistema
-    if (criacao && criacao.toDate) {
-      return criacao.toDate().toLocaleDateString('pt-BR')
-    }
-    return "Data Especial"
-  }
+  ]
 
   return (
-    <div className="min-h-screen p-4 flex items-center justify-center">
-      <div className="torn-container w-full max-w-md min-h-[80vh]">
+    <div className="min-h-screen p-2 flex items-center justify-center">
+      <div className="torn-container w-full max-w-lg">
         
-        <div className="text-center mb-8">
-          <Calendar className="w-8 h-8 mx-auto text-passion mb-2" />
-          <h2 className="text-4xl font-serif font-bold text-passion italic">Nossa História</h2>
-          <p className="text-sm text-passion/60 mt-2 font-serif">"Cada segundo ao seu lado..."</p>
+        {/* Cabeçalho da Timeline */}
+        <div className="text-center mb-10 relative">
+          <Calendar className="w-8 h-8 mx-auto mb-2 text-passion" />
+          <h2 className="text-4xl font-serif italic font-bold text-passion">Nossa História</h2>
+          <div className="h-0.5 w-12 bg-passion/30 mx-auto mt-2 rounded-full"></div>
         </div>
 
-        {isAdmin && (
-          <form onSubmit={addEvent} className="mb-10 bg-red-50 p-4 rounded-lg border border-passion/10">
-            <h3 className="text-passion font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-widest">
-              <Plus size={16} /> Nova Memória
-            </h3>
-            <div className="space-y-3">
-              <input 
-                type="date" 
-                value={newItem.data} 
-                onChange={e => setNewItem({...newItem, data: e.target.value})}
-                className="w-full p-2 bg-white border border-passion/20 rounded text-passion focus:outline-none focus:border-passion"
-              />
-              <input 
-                placeholder="Título (ex: O primeiro beijo)" 
-                value={newItem.titulo} 
-                onChange={e => setNewItem({...newItem, titulo: e.target.value})}
-                className="w-full p-2 bg-white border border-passion/20 rounded text-passion placeholder-passion/40 focus:outline-none focus:border-passion"
-              />
-              <textarea 
-                placeholder="Detalhes desse dia..." 
-                value={newItem.descricao} 
-                onChange={e => setNewItem({...newItem, descricao: e.target.value})}
-                className="w-full p-2 bg-white border border-passion/20 rounded text-passion placeholder-passion/40 focus:outline-none focus:border-passion h-20"
-              />
-              <button type="submit" className="w-full bg-passion text-white py-2 rounded font-bold hover:bg-red-900 transition shadow-md">
-                Gravar na Eternidade
-              </button>
-            </div>
-          </form>
-        )}
+        {/* Linha do Tempo */}
+        <div className="relative space-y-8 pl-4 sm:pl-0">
+          
+          {/* Linha Vertical Central (apenas decorativa) */}
+          <div className="absolute left-8 sm:left-1/2 top-4 bottom-4 w-0.5 bg-passion/20 -translate-x-1/2 hidden sm:block"></div>
 
-        <div className="relative pl-4 space-y-8">
-          <div className="timeline-line"></div>
-
-          {events.map((evt) => {
-            // Lógica "Universal": Pega o primeiro que encontrar
-            const dataFinal = evt.data || evt.date;
-            const tituloFinal = evt.titulo || evt.title || "Sem título";
-            const descFinal = evt.descricao || evt.desc || evt.description;
-
-            return (
-              <div key={evt.id} className="relative pl-8 group">
-                <div className="absolute left-0 top-1 w-8 h-8 bg-white border-2 border-passion rounded-full flex items-center justify-center z-10 shadow-sm">
-                  <Heart size={14} className="text-passion fill-passion" />
+          {eventos.map((evento, index) => (
+            <div key={evento.id} className="relative flex flex-col sm:flex-row items-center gap-6 group">
+              
+              {/* Data e Ícone (Mobile: Esquerda / Desktop: Alternado) */}
+              <div className={`flex flex-col items-center sm:w-1/2 ${index % 2 === 0 ? 'sm:items-end sm:text-right sm:pr-8' : 'sm:items-start sm:text-left sm:pl-8 sm:order-last'}`}>
+                
+                {/* Ícone Bolinha */}
+                <div className="absolute left-0 sm:left-1/2 -translate-x-1/2 w-8 h-8 bg-passion text-white rounded-full flex items-center justify-center shadow-lg z-10 border-2 border-white">
+                  <evento.icon size={14} />
                 </div>
 
-                <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition">
-                  <span className="text-xs font-bold text-passion/50 tracking-wider block mb-1">
-                    {formatarData(dataFinal, evt.createdAt)}
+                {/* Texto da Data */}
+                <div className="pl-10 sm:pl-0 mb-2 sm:mb-0">
+                  <span className="inline-block px-3 py-1 bg-passion/10 text-passion text-xs font-bold uppercase tracking-wider rounded-full mb-2">
+                    {evento.date}
                   </span>
-                  
-                  <h3 className="text-xl font-serif text-passion font-bold">{tituloFinal}</h3>
-                  
-                  {descFinal && (
-                    <p className="text-gray-600 mt-2 text-sm leading-relaxed font-serif">{descFinal}</p>
-                  )}
-                  
-                  {isAdmin && (
-                    <button onClick={() => deleteEvent(evt.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  <h3 className="text-xl font-bold font-serif text-passion">{evento.title}</h3>
+                  <p className="text-sm text-gray-600 mt-1 leading-relaxed max-w-xs">
+                    {evento.description}
+                  </p>
                 </div>
               </div>
-            )
-          })}
+
+              {/* Imagem (Moldura Polaroid) */}
+              <div className={`sm:w-1/2 pl-10 sm:pl-0 ${index % 2 === 0 ? 'sm:pl-8' : 'sm:pr-8 sm:text-right'}`}>
+                <div className="photo-frame rotate-1 group-hover:rotate-0 transition-transform duration-500">
+                  <div className="aspect-square w-full overflow-hidden bg-gray-100 rounded-sm">
+                    <img 
+                      src={evento.image} 
+                      alt={evento.title} 
+                      className="w-full h-full object-cover sepia-[0.15] hover:sepia-0 transition-all duration-700" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          ))}
         </div>
+
+        {/* Finalzinho */}
+        <div className="text-center mt-12 pt-8 border-t border-passion/10">
+          <p className="font-serif italic text-passion/60">...e a história continua ❤️</p>
+        </div>
+
       </div>
     </div>
   )
