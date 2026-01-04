@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-// Adicionei o Heart de volta aos imports
 import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
@@ -37,29 +36,59 @@ export default function Home() {
     { id: 9, text: "Café na Cama ☕" }
   ]
 
-  // Função para selecionar o ícone correto baseado no ID do cupom
   const getCouponIcon = (id) => {
     switch(id) {
-      case 1: return Sparkles;      // Massagem
-      case 2: return Clapperboard;  // Escolher filme (casa)
-      case 3: return Utensils;      // Jantar
-      case 4: return Gift;          // Presente
-      case 5: return IceCream;      // Sorvete
-      case 6: return Gamepad2;      // Video Game
-      case 7: return ChefHat;       // Cozinhar
-      case 8: return Film;          // Cinema (sair)
-      case 9: return Coffee;        // Café na cama
+      case 1: return Sparkles;      
+      case 2: return Clapperboard;  
+      case 3: return Utensils;      
+      case 4: return Gift;          
+      case 5: return IceCream;      
+      case 6: return Gamepad2;      
+      case 7: return ChefHat;       
+      case 8: return Film;          
+      case 9: return Coffee;        
       default: return Ticket;
     }
   }
 
+  // --- LÓGICA DE RENOVAÇÃO MENSAL AQUI ---
   useEffect(() => {
     const docRef = doc(db, "appData", "shared")
-    const checkDoc = async () => {
+    
+    const checkAndResetCoupons = async () => {
       const snap = await getDoc(docRef)
-      if (!snap.exists()) { await setDoc(docRef, { cuponsUsados: [] }) }
+      
+      // Se o documento não existe, cria ele
+      if (!snap.exists()) { 
+        await setDoc(docRef, { cuponsUsados: [], lastReset: serverTimestamp() }) 
+        return
+      }
+
+      const data = snap.data()
+      // Tenta pegar a data do último reset (se existir)
+      const lastReset = data.lastReset?.toDate() 
+      const now = new Date()
+
+      // Lógica de verificação:
+      // 1. Se nunca foi resetado (primeira vez rodando esse código novo)
+      // 2. OU se o mês atual for diferente do mês do último reset
+      // 3. OU se o ano virou
+      const needsReset = !lastReset || 
+                         lastReset.getMonth() !== now.getMonth() || 
+                         lastReset.getFullYear() !== now.getFullYear()
+
+      if (needsReset) {
+        // Renova os cupons limpando a lista e atualizando a data
+        await updateDoc(docRef, {
+          cuponsUsados: [],
+          lastReset: serverTimestamp()
+        })
+        console.log("Mês virou! Cupons renovados.")
+      }
     }
-    checkDoc()
+
+    checkAndResetCoupons()
+
     const unsubscribe = onSnapshot(docRef, (doc) => {
       if (doc.exists()) { setCuponsUsados(doc.data().cuponsUsados || []) }
     })
@@ -128,10 +157,9 @@ export default function Home() {
           
           <div className="flex justify-around gap-4 px-1">
             {[
-              // AQUI: Troquei Coffee por Heart
               { id: 'Saudade', icon: Heart, msg: mensagens.saudade }, 
-              { id: 'Estresse', icon: Leaf, msg: mensagens.estresse }, // Folha = Calma/Respirar
-              { id: 'Rir', icon: Laugh, msg: mensagens.rir }           // Riso = Alegria
+              { id: 'Estresse', icon: Leaf, msg: mensagens.estresse }, 
+              { id: 'Rir', icon: Laugh, msg: mensagens.rir }           
             ].map((item) => (
               <div key={item.id} className="flex flex-col items-center gap-2 group">
                 <button onClick={() => abrirCarta(item.id, item.msg)} className="btn-seal group-hover:-translate-y-1 transition-transform">
