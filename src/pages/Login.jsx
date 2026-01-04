@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../lib/firebase'
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { auth, db } from '../lib/firebase'
 import { Heart, Key } from 'lucide-react'
 
 export default function Login() {
@@ -8,12 +9,40 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
+  // Função auxiliar para gravar o histórico no banco de dados
+  const registrarAcesso = async (user, metodo) => {
+    try {
+      await addDoc(collection(db, "historico_logins"), {
+        uid: user.uid,
+        nome: user.displayName || "Usuário Email/Senha",
+        email: user.email,
+        metodo: metodo, // 'google' ou 'senha'
+        data: serverTimestamp(),
+        dispositivo: navigator.userAgent // Guarda se foi celular ou PC
+      })
+    } catch (err) {
+      console.error("Erro ao registrar acesso:", err)
+    }
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault()
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      await registrarAcesso(userCredential.user, "Senha")
     } catch (error) {
-      setError("Apenas corações autorizados...")
+      setError("Senha incorreta ou email não encontrado...")
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider()
+    try {
+      const result = await signInWithPopup(auth, provider)
+      await registrarAcesso(result.user, "Google")
+    } catch (error) {
+      console.error(error)
+      setError("Erro ao conectar com Google. Tente novamente.")
     }
   }
 
@@ -59,9 +88,29 @@ export default function Login() {
             type="submit" 
             className="w-full bg-passion text-white py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mt-4"
           >
-            <Key size={18} /> Entrar
+            <Key size={18} /> Entrar com Senha
           </button>
         </form>
+
+        {/* Divisor */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500 font-serif italic">ou use sua conta</span>
+          </div>
+        </div>
+
+        {/* Botão Google */}
+        <button 
+          onClick={handleGoogleLogin}
+          className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-full font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+          Entrar com Google
+        </button>
+
       </div>
     </div>
   )
