@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star } from 'lucide-react'
+import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 
@@ -24,6 +24,13 @@ export default function Home() {
   
   // Estado do Cronômetro
   const [tempoJuntos, setTempoJuntos] = useState({ anos: 0, meses: 0, dias: 0, horas: 0, minutos: 0, segundos: 0 })
+
+  // --- ESTADOS DA SESSÃO SECRETA ---
+  const [secretClicks, setSecretClicks] = useState(0)
+  const [showSecret, setShowSecret] = useState(false)
+  const [password, setPassword] = useState("")
+  const [unlocked, setUnlocked] = useState(false)
+  const [desafioPicante, setDesafioPicante] = useState(null)
 
   const mensagens = {
     saudade: "Quando a saudade apertar, lembre-se que estou a apenas uma mensagem de distância. Te amo muito! ❤️",
@@ -61,6 +68,19 @@ export default function Home() {
     "Por aguentar minhas loucuras",
     "Pela nossa conexão única",
     "Simplesmente por você existir!"
+  ]
+
+  // --- LISTA DE DESAFIOS PICANTES ---
+  const desafiosQuentes = [
+    "Faça uma massagem de 5 minutos (onde eu escolher)",
+    "Sussurre no meu ouvido o que você quer fazer agora",
+    "Tire uma peça de roupa",
+    "Um beijo demorado no pescoço",
+    "Venda nos olhos por 3 minutos (confie em mim)",
+    "Use gelo... seja criativo",
+    "Faça um pedido irrecusável",
+    "Mordidinha...",
+    "Toque sem usar as mãos por 1 minuto"
   ]
 
   const listaCupons = [
@@ -102,6 +122,11 @@ export default function Home() {
     }, 1500)
   }
 
+  const sortearDesafio = () => {
+    const aleatorio = desafiosQuentes[Math.floor(Math.random() * desafiosQuentes.length)]
+    setDesafioPicante(aleatorio)
+  }
+
   const gerarMotivo = () => {
     const aleatorio = motivosAmor[Math.floor(Math.random() * motivosAmor.length)]
     setMotivoAtual(aleatorio)
@@ -115,16 +140,35 @@ export default function Home() {
     } catch (error) { console.error("Erro ao notificar:", error) }
   }
 
-  // --- EFEITOS (Renovação e Cronômetro) ---
+  // --- LÓGICA DO SEGREDO ---
+  const handleSecretTrigger = () => {
+    if (secretClicks + 1 >= 5) {
+      setShowSecret(true)
+      setSecretClicks(0)
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100])
+    } else {
+      setSecretClicks(prev => prev + 1)
+    }
+  }
+
+  const checkPassword = () => {
+    // Senha: dia e mês (1008) ou ano (2025)
+    if (password === "1008" || password === "2025") {
+      setUnlocked(true)
+    } else {
+      alert("Senha incorreta, espertinho! 🔒")
+      setPassword("")
+    }
+  }
+
+  // --- EFEITOS ---
   
-  // 1. CRONÔMETRO DE TEMPO JUNTOS (ATUALIZADO 2025)
   useEffect(() => {
-    // Definido para 10 de Agosto de 2025 às 20:15
+    // 10 de Agosto de 2025 às 20:15
     const dataInicioNamoro = new Date("2025-08-10T20:15:00") 
 
     const timer = setInterval(() => {
       const agora = new Date()
-      // Se a data atual for anterior ao início (caso teste antes da data), zera a diferença
       const diferenca = Math.max(0, agora - dataInicioNamoro)
 
       const anos = Math.floor(diferenca / (1000 * 60 * 60 * 24 * 365))
@@ -140,7 +184,6 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [])
 
-  // 2. RENOVAÇÃO DE CUPONS (MANTIDO DIA 13)
   useEffect(() => {
     const docRef = doc(db, "appData", "shared")
     const checkAndResetCoupons = async () => {
@@ -154,7 +197,6 @@ export default function Home() {
       const now = new Date()
       let cicloAtualInicio = new Date(now)
       
-      // Lógica do dia 13 (Pedido de Namoro)
       if (now.getDate() < 13) { cicloAtualInicio.setMonth(cicloAtualInicio.getMonth() - 1) }
       cicloAtualInicio.setDate(13)
       cicloAtualInicio.setHours(0, 0, 0, 0)
@@ -187,16 +229,18 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center p-2">
       <div className="torn-container space-y-12">
         
-        {/* Cabeçalho */}
-        <div className="text-center relative">
-          <Mail className="w-8 h-8 mx-auto mb-3 text-passion animate-bounce-slow" strokeWidth={1.5} /> 
+        {/* Cabeçalho - GATILHO SECRETO */}
+        <div className="text-center relative select-none">
+          <div onClick={handleSecretTrigger} className="cursor-pointer active:scale-90 transition-transform inline-block">
+             <Mail className="w-8 h-8 mx-auto mb-3 text-passion animate-bounce-slow" strokeWidth={1.5} /> 
+          </div>
           <h1 className="text-5xl font-serif italic font-bold text-passion">
             Para Wesley
           </h1>
           <div className="h-0.5 w-16 bg-passion/30 mx-auto mt-4 rounded-full"></div>
         </div>
 
-        {/* --- CRONÔMETRO DO AMOR --- */}
+        {/* Cronômetro */}
         <div className="bg-passion text-white p-6 rounded-lg shadow-inner relative overflow-hidden">
           <div className="absolute top-0 right-0 p-2 opacity-10"><Clock size={100} /></div>
           <h3 className="text-lg font-serif italic mb-4 flex items-center gap-2 relative z-10">
@@ -253,7 +297,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* --- MOTIVOS PARA AMAR --- */}
+        {/* Motivos */}
         <div className="space-y-4">
           <SectionHeader icon={Star} title="Por que te amo?" />
           <div 
@@ -295,7 +339,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Potinho de Encontros */}
+        {/* Potinho */}
         <div className="space-y-4">
           <SectionHeader icon={Lightbulb} title="O que vamos fazer?" />
           <div className="bg-passion/5 p-6 rounded-lg border-2 border-dashed border-passion/20 text-center relative overflow-hidden">
@@ -352,6 +396,119 @@ export default function Home() {
             })}
           </div>
         </div>
+
+        {/* Assinatura */}
+        <div className="mt-16 text-center space-y-2 pb-8 border-t border-passion/10 pt-8">
+          <p className="text-passion/60 font-serif italic text-lg">Com amor,</p>
+          <div className="relative inline-block">
+            <h2 className="text-2xl text-passion font-serif font-bold italic transform -rotate-2">
+              João Fernandes
+            </h2>
+            <Heart size={16} className="absolute -right-6 top-0 text-passion fill-current animate-pulse" />
+          </div>
+        </div>
+
+        {/* --- MODAL DA SESSÃO SECRETA --- */}
+        {showSecret && (
+          <div className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4 animate-fade-in backdrop-blur-sm">
+            <div className="bg-neutral-900 border border-red-900/50 p-8 rounded-xl max-w-sm w-full text-center relative shadow-2xl">
+              <button 
+                onClick={() => { setShowSecret(false); setUnlocked(false); setPassword(""); setDesafioPicante(null); }} 
+                className="absolute top-3 right-3 text-neutral-600 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+              
+              {!unlocked ? (
+                // TELA DE BLOQUEIO
+                <div className="space-y-6 py-4">
+                  <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-900/50">
+                    <Lock className="text-red-600" size={32} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl text-red-500 font-serif font-bold mb-1">Área Restrita</h2>
+                    <p className="text-neutral-400 text-sm">Digite a senha do nosso dia especial (Dia+Mes)</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="password" 
+                      maxLength={4}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="****"
+                      className="bg-neutral-800 border border-neutral-700 text-white text-center text-2xl tracking-[0.5em] rounded-lg w-full py-3 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
+                    />
+                  </div>
+                  <button 
+                    onClick={checkPassword}
+                    className="w-full bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-lg shadow-lg shadow-red-900/20 transition-all active:scale-95"
+                  >
+                    Desbloquear
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6 py-2 animate-fade-in max-h-[70vh] overflow-y-auto">
+                  <div className="flex items-center justify-center gap-2 text-red-500 mb-2">
+                    <Flame size={24} className="fill-current animate-pulse" />
+                    <h2 className="text-2xl font-serif font-bold italic">Cantinho Picante</h2>
+                    <Flame size={24} className="fill-current animate-pulse" />
+                  </div>
+
+                  {/* 1. DADO DO AMOR / SORTEIO */}
+                  <div className="bg-neutral-800/40 p-5 rounded-lg border border-red-900/30">
+                    {!desafioPicante ? (
+                       <div className="space-y-3">
+                         <Dices size={32} className="text-red-500 mx-auto mb-2" />
+                         <p className="text-neutral-300 text-sm">Sem ideias? Deixe a sorte decidir o que vamos fazer agora.</p>
+                         <button 
+                            onClick={sortearDesafio}
+                            className="bg-red-700 hover:bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg w-full active:scale-95 transition-all"
+                         >
+                            Sortear Desafio 🔥
+                         </button>
+                       </div>
+                    ) : (
+                       <div className="space-y-4 animate-fade-in">
+                         <p className="text-xs uppercase tracking-widest text-neutral-500">O desafio é:</p>
+                         <h3 className="text-xl text-white font-serif font-bold leading-relaxed px-2">
+                           "{desafioPicante}"
+                         </h3>
+                         <button onClick={() => setDesafioPicante(null)} className="text-red-500 text-xs underline">
+                            Tentar outro
+                         </button>
+                       </div>
+                    )}
+                  </div>
+
+                  {/* 2. MENU DE SUGESTÕES (CUPONS) */}
+                  <div className="space-y-3 mt-4 text-left">
+                    <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest text-center mb-2">Menu de Hoje</p>
+                    
+                    <div className="bg-neutral-800/50 p-3 rounded border border-red-900/30 flex items-center gap-3 hover:bg-neutral-800 transition-colors">
+                      <span className="text-lg">💋</span>
+                      <span className="text-neutral-300 text-sm font-medium">Vale uma massagem... sem pressa.</span>
+                    </div>
+                    
+                    <div className="bg-neutral-800/50 p-3 rounded border border-red-900/30 flex items-center gap-3 hover:bg-neutral-800 transition-colors">
+                      <span className="text-lg">🚿</span>
+                      <span className="text-neutral-300 text-sm font-medium">Companhia no banho.</span>
+                    </div>
+
+                    {/* Striptease Removido */}
+
+                    <div className="bg-neutral-800/50 p-3 rounded border border-red-900/30 flex items-center gap-3 hover:bg-neutral-800 transition-colors">
+                      <span className="text-lg">👀</span>
+                      <span className="text-neutral-300 text-sm font-medium">Realizar uma fantasia.</span>
+                    </div>
+                  </div>
+
+                  <p className="text-neutral-600 text-xs italic mt-4">"O que acontece aqui, fica aqui..."</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )
