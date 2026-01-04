@@ -1,19 +1,22 @@
 import React from 'react'
-import { Heart, Calendar, Star, Music, Camera } from 'lucide-react'
+// 1. Adicionei 'IceCream' aqui nos imports
+import { Heart, Calendar, Star, Music, Camera, IceCream } from 'lucide-react'
 
 import imgKiss from '../assets/kiss.jpeg'
 import imgAliancas from '../assets/alianças.jpeg'
 import imgCamisas from '../assets/camisas.jpeg'
 import imgFormei from '../assets/formei.jpeg'
 import imgWicked from '../assets/wicked.jpeg'
+// 2. Importando a nova foto (lembre de colocar o arquivo na pasta assets!)
+import imgMilkMoo from '../assets/milkmoo.jpeg' 
 
 export default function Timeline() {
   const eventos = [
     {
       id: 1,
       date: "O Início",
-      title: "Onde tudo começou",
-      description: "Aquele primeiro beijo que mudou tudo. Sabia ali que seria especial.",
+      title: "O Início de Nós",
+      description: "Um dos nossos primeiros beijos registrados. Lembrança de uma fase deliciosa onde tudo estava começando.",
       image: imgKiss,
       icon: Heart
     },
@@ -28,8 +31,8 @@ export default function Timeline() {
     {
       id: 3,
       date: "Conquistas",
-      title: "Minha Formatura", // Ajustado: Título correto
-      description: "Ter você ao meu lado comemorando essa conquista tornou o dia ainda mais inesquecível. Obrigado por torcer por mim!", // Ajustado: Agradecendo a presença dele
+      title: "Minha Formatura",
+      description: "Ter você ao meu lado comemorando essa conquista tornou o dia ainda mais inesquecível. Obrigado por torcer por mim!",
       image: imgFormei,
       icon: Star
     },
@@ -48,6 +51,14 @@ export default function Timeline() {
       description: "Um símbolo do nosso amor e de tudo que ainda vamos construir juntos. Te amo!",
       image: imgAliancas,
       icon: Heart
+    },
+        {
+      id: 6,
+      date: "Doçura", // Título da categoria
+      title: "Date na Milk Moo", // 3. Novo Evento Adicionado
+      description: "Nos divertimos muito saindo para provar aquele milk shake! Momentos doces e risadas com você.",
+      image: imgMilkMoo,
+      icon: IceCream
     }
   ]
 

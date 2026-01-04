@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart } from 'lucide-react'
+import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 
@@ -16,6 +16,10 @@ const SectionHeader = ({ icon: Icon, title }) => (
 export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
   const [cuponsUsados, setCuponsUsados] = useState([])
+  
+  // Estados do Potinho
+  const [ideiaDate, setIdeiaDate] = useState(null)
+  const [animandoPotinho, setAnimandoPotinho] = useState(false)
 
   const mensagens = {
     saudade: "Quando a saudade apertar, lembre-se que estou a apenas uma mensagem de distância. Te amo muito! ❤️",
@@ -23,7 +27,25 @@ export default function Home() {
     rir: "Dizem que a gravidade é apenas uma teoria... até o dia em que aquela cadeira decidiu provar que a lei é implacável com você! 🪑"
   }
 
-  // Lista completa de cupons
+  // --- LISTA DE IDEIAS ATUALIZADA (Sem jogos de tabuleiro, com mais opções) ---
+  const ideiasEncontro = [
+    "🍕 Noite de Pizza e Vinho em casa",
+    "🍿 Maratona de filmes (Harry Potter?)",
+    "🍳 Cozinhar uma receita nova juntos (Masterchef!)",
+    "🧺 Piquenique na sala de estar (com toalha no chão e tudo!)",
+    "🎮 Campeonato de Video Game valendo massagem",
+    "🚶‍♂️ Caminhada no fim de tarde para ver o pôr do sol",
+    "🍔 Ir naquela hamburgueria que a gente gosta",
+    "🍦 Sair só para tomar uma sobremesa",
+    "🛁 Banho relaxante ou Spa Day em casa",
+    "🎤 Noite de Karaokê (vale cantar mal!)",
+    "🍫 Noite de Fondue (queijo ou chocolate)",
+    "🍹 Criar nossos próprios drinks (ou milkshakes)",
+    "🎨 Pintar ou desenhar algo juntos",
+    "🔭 Deitar e ver as estrelas",
+    "🥞 Café da manhã no jantar (Panquecas à noite!)"
+  ]
+
   const listaCupons = [
     { id: 1, text: "Vale uma Massagem 💆‍♂️" },
     { id: 2, text: "Vale escolher o filme 🎬" },
@@ -51,57 +73,56 @@ export default function Home() {
     }
   }
 
-  // --- LÓGICA DE RENOVAÇÃO MENSAL AQUI ---
+  // Função para sortear encontro
+  const tirarPapelzinho = () => {
+    if (animandoPotinho) return
+    setAnimandoPotinho(true)
+    setIdeiaDate(null) // Limpa o anterior para dar suspense
+
+    // Simula o tempo de "agitar" o potinho
+    setTimeout(() => {
+      const aleatorio = ideiasEncontro[Math.floor(Math.random() * ideiasEncontro.length)]
+      setIdeiaDate(aleatorio)
+      setAnimandoPotinho(false)
+    }, 1500)
+  }
+
+  const enviarNotificacao = async (titulo, texto) => {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        title: titulo, text: texto, createdAt: serverTimestamp(), senderId: auth.currentUser?.uid, isSystem: true
+      })
+    } catch (error) { console.error("Erro ao notificar:", error) }
+  }
+
+  // --- LÓGICA DE RENOVAÇÃO (DIA 13) ---
   useEffect(() => {
     const docRef = doc(db, "appData", "shared")
-    
     const checkAndResetCoupons = async () => {
       const snap = await getDoc(docRef)
-      
-      // Se o documento não existe, cria ele
       if (!snap.exists()) { 
         await setDoc(docRef, { cuponsUsados: [], lastReset: serverTimestamp() }) 
         return
       }
-
       const data = snap.data()
-      // Tenta pegar a data do último reset (se existir)
-      const lastReset = data.lastReset?.toDate() 
+      const lastReset = data.lastReset ? data.lastReset.toDate() : null
       const now = new Date()
+      let cicloAtualInicio = new Date(now)
+      if (now.getDate() < 13) { cicloAtualInicio.setMonth(cicloAtualInicio.getMonth() - 1) }
+      cicloAtualInicio.setDate(13)
+      cicloAtualInicio.setHours(0, 0, 0, 0)
 
-      // Lógica de verificação:
-      // 1. Se nunca foi resetado (primeira vez rodando esse código novo)
-      // 2. OU se o mês atual for diferente do mês do último reset
-      // 3. OU se o ano virou
-      const needsReset = !lastReset || 
-                         lastReset.getMonth() !== now.getMonth() || 
-                         lastReset.getFullYear() !== now.getFullYear()
-
-      if (needsReset) {
-        // Renova os cupons limpando a lista e atualizando a data
-        await updateDoc(docRef, {
-          cuponsUsados: [],
-          lastReset: serverTimestamp()
-        })
-        console.log("Mês virou! Cupons renovados.")
+      if (!lastReset || lastReset < cicloAtualInicio) {
+        await updateDoc(docRef, { cuponsUsados: [], lastReset: serverTimestamp() })
+        await enviarNotificacao("🔄 Cupons Renovados!", "Hoje é nosso dia! Seus cupons mensais foram renovados. Aproveite seus mimos! ❤️")
       }
     }
-
     checkAndResetCoupons()
-
     const unsubscribe = onSnapshot(docRef, (doc) => {
       if (doc.exists()) { setCuponsUsados(doc.data().cuponsUsados || []) }
     })
     return () => unsubscribe()
   }, [])
-
-  const enviarNotificacao = async (titulo, texto) => {
-      try {
-        await addDoc(collection(db, "notifications"), {
-          title: titulo, text: texto, createdAt: serverTimestamp(), senderId: auth.currentUser?.uid, isSystem: true
-        })
-      } catch (error) { console.error("Erro ao notificar:", error) }
-  }
 
   const usarCupom = async (id, text) => {
     if (!cuponsUsados.includes(id)) {
@@ -154,7 +175,6 @@ export default function Home() {
         {/* Abra Quando */}
         <div className="space-y-4">
           <SectionHeader icon={Mail} title="Abra quando..." />
-          
           <div className="flex justify-around gap-4 px-1">
             {[
               { id: 'Saudade', icon: Heart, msg: mensagens.saudade }, 
@@ -169,13 +189,46 @@ export default function Home() {
               </div>
             ))}
           </div>
-          
           {mensagemAtiva && (
             <div className="mt-6 bg-red-50 p-6 rounded-lg border border-passion/20 animate-fade-in text-center relative shadow-inner mx-2">
               <p className="text-passion text-lg font-serif italic leading-relaxed">"{mensagemAtiva}"</p>
               <button onClick={() => setMensagemAtiva(null)} className="mt-4 text-xs text-passion/60 font-bold uppercase tracking-widest hover:text-passion">Fechar</button>
             </div>
           )}
+        </div>
+
+        {/* --- POTINHO DE ENCONTROS --- */}
+        <div className="space-y-4">
+          <SectionHeader icon={Lightbulb} title="O que vamos fazer?" />
+          <div className="bg-passion/5 p-6 rounded-lg border-2 border-dashed border-passion/20 text-center relative overflow-hidden">
+            
+            {!ideiaDate ? (
+              <div className="space-y-4">
+                <p className="text-passion/70 font-serif italic">Sem ideias para hoje? Deixe o destino decidir!</p>
+                <button 
+                  onClick={tirarPapelzinho}
+                  disabled={animandoPotinho}
+                  className="bg-passion text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-passion/90 active:scale-95 transition-all flex items-center justify-center gap-2 mx-auto disabled:opacity-70"
+                >
+                  <RefreshCw size={20} className={animandoPotinho ? "animate-spin" : ""} />
+                  {animandoPotinho ? "Misturando..." : "Agitar o Potinho 🏺"}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4 animate-fade-in">
+                <span className="text-xs uppercase tracking-widest text-passion/50 font-bold">O destino escolheu:</span>
+                <h4 className="text-2xl font-bold text-passion font-serif px-2 leading-relaxed">
+                  ✨ {ideiaDate} ✨
+                </h4>
+                <button 
+                  onClick={() => setIdeiaDate(null)}
+                  className="text-sm text-passion/60 underline hover:text-passion mt-2"
+                >
+                  Tentar outro
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Cupons */}
