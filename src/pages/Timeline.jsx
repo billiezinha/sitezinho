@@ -1,8 +1,6 @@
 import React from 'react'
 import { Heart, Calendar, Star, Music, Camera } from 'lucide-react'
 
-// Importando as imagens que você tem na pasta assets
-// Certifique-se de que os nomes dos arquivos estão exatos (maiúsculas/minúsculas importam)
 import imgKiss from '../assets/kiss.jpeg'
 import imgAliancas from '../assets/alianças.jpeg'
 import imgCamisas from '../assets/camisas.jpeg'
@@ -10,8 +8,6 @@ import imgFormei from '../assets/formei.jpeg'
 import imgWicked from '../assets/wicked.jpeg'
 
 export default function Timeline() {
-  // Lista de eventos da história de vocês
-  // Você pode alterar as datas e textos conforme a história real!
   const eventos = [
     {
       id: 1,
@@ -32,8 +28,8 @@ export default function Timeline() {
     {
       id: 3,
       date: "Conquistas",
-      title: "Sua Formatura",
-      description: "Ver você alcançar seus sonhos me enche de orgulho. Estarei sempre na primeira fila te aplaudindo.",
+      title: "Minha Formatura", // Ajustado: Título correto
+      description: "Ter você ao meu lado comemorando essa conquista tornou o dia ainda mais inesquecível. Obrigado por torcer por mim!", // Ajustado: Agradecendo a presença dele
       image: imgFormei,
       icon: Star
     },
