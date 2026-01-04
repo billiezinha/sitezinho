@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Heart, Calendar, Image, Feather, LogOut, Bell } from 'lucide-react'
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore' // Importações do Firebase
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
 
@@ -19,22 +19,19 @@ function NotificationController({ user }) {
     const result = await Notification.requestPermission()
     setPermission(result)
     
-    if (result === 'granted') {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification("🔔 Notificações Ativas", {
-            body: "O sistema de alertas está pronto!",
-            icon: '/pwa-192x192.png'
-          })
+    if (result === 'granted' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification("🔔 Notificações Ativas", {
+          body: "O sistema de alertas está pronto!",
+          icon: '/vite.svg'
         })
-      }
+      })
     }
   }
 
   useEffect(() => {
     if (!user) return
 
-    // MUDANÇA: Agora ouvimos a coleção "notifications" (Central de Avisos)
     const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(1))
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -43,24 +40,18 @@ function NotificationController({ user }) {
           const data = change.doc.data()
           if (!data.createdAt) return 
 
-          // Verifica se é recente (últimos 60s)
+          // Só notifica se for recente (menos de 1 minuto)
           const isRecent = (Date.now() - data.createdAt.toMillis() < 60000)
-          
-          // Verifica se o remetente não sou eu (para não notificar minha própria ação)
-          // Se quiser testar sozinho, pode remover essa verificação temporariamente
           const isFromOthers = data.senderId !== user.uid
 
           if (isRecent && isFromOthers && Notification.permission === "granted") {
-            
-            // Vibração
             try { navigator.vibrate([200, 100, 200]); } catch(e){}
 
-            // Dispara no Celular (Barra de Status)
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.ready.then(registration => {
                 registration.showNotification(data.title || "✨ Nova Notificação", {
                   body: data.text,
-                  icon: '/pwa-192x192.png',
+                  icon: '/vite.svg',
                   badge: '/vite.svg',
                   tag: 'system-notif-' + change.doc.id,
                   renotify: true
@@ -81,7 +72,7 @@ function NotificationController({ user }) {
     return (
       <button 
         onClick={requestPermission}
-        className="fixed top-4 left-4 z-50 bg-pink-600 text-white p-3 rounded-full shadow-lg animate-bounce border-2 border-white"
+        className="fixed top-4 left-4 z-50 bg-passion text-white p-3 rounded-full shadow-lg animate-bounce border-2 border-[#d4af37]"
         title="Ativar Notificações"
       >
         <Bell size={24} fill="currentColor" />
@@ -92,35 +83,47 @@ function NotificationController({ user }) {
   return null
 }
 
+// --- Navegação Vermelha Sólida (Com Ícones) ---
 function Navigation() {
   const location = useLocation();
-  const getClass = (path) => 
-    `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${location.pathname === path ? "text-pink-500 scale-110 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]" : "text-slate-600 hover:text-slate-400"}`;
+  
+  const getIconStyle = (path) => {
+    const isActive = location.pathname === path;
+    return {
+      color: "white",
+      // Se ativo, preenche com branco. Se inativo, transparente.
+      fill: isActive ? "white" : "none", 
+      // Aumentei strokeWidth para 2.5 (mais grosso e visível)
+      strokeWidth: isActive ? 0 : 2.5, 
+      className: `transition-all duration-300 ${isActive ? "scale-110 drop-shadow-md" : "opacity-70 hover:opacity-100"}`
+    };
+  };
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur-md border-t border-slate-800 h-16 z-50">
-      <div className="flex justify-around items-center h-full max-w-md mx-auto">
-        <Link to="/" className={getClass("/")}>
-          <Heart size={24} fill={location.pathname === "/" ? "currentColor" : "none"} />
-          <span className="text-[10px] mt-1 font-medium">Início</span>
+    <nav className="fixed bottom-0 left-0 w-full h-20 z-50 bg-passion shadow-[0_-4px_10px_rgba(0,0,0,0.3)] border-t border-white/10">
+      <div className="flex justify-around items-center h-full max-w-md mx-auto pb-2">
+        <Link to="/" className="flex flex-col items-center justify-center w-full group">
+          <Heart size={30} {...getIconStyle("/")} /> {/* Aumentei size para 30 */}
+          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Início</span>
         </Link>
-        <Link to="/timeline" className={getClass("/timeline")}>
-          <Calendar size={24} />
-          <span className="text-[10px] mt-1 font-medium">História</span>
+        <Link to="/timeline" className="flex flex-col items-center justify-center w-full group">
+          <Calendar size={30} {...getIconStyle("/timeline")} />
+          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Nós</span>
         </Link>
-        <Link to="/gallery" className={getClass("/gallery")}>
-          <Image size={24} />
-          <span className="text-[10px] mt-1 font-medium">Fotos</span>
+        <Link to="/gallery" className="flex flex-col items-center justify-center w-full group">
+          <Image size={30} {...getIconStyle("/gallery")} />
+          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Fotos</span>
         </Link>
-        <Link to="/poems" className={getClass("/poems")}>
-          <Feather size={24} />
-          <span className="text-[10px] mt-1 font-medium">Poemas</span>
+        <Link to="/poems" className="flex flex-col items-center justify-center w-full group">
+          <Feather size={30} {...getIconStyle("/poems")} />
+          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Versos</span>
         </Link>
       </div>
     </nav>
   )
 }
 
+// --- Componente Principal ---
 export default function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -133,7 +136,7 @@ export default function App() {
     return () => unsubscribe()
   }, [])
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-pink-500">Carregando...</div>
+  if (loading) return <div className="min-h-screen bg-passion flex items-center justify-center text-[#d4af37] font-serif text-xl">Carregando nosso amor...</div>
 
   if (!user) return <Login />
 
@@ -141,10 +144,10 @@ export default function App() {
     <BrowserRouter>
       <NotificationController user={user} />
       
-      <div className="max-w-md mx-auto min-h-screen bg-slate-950 relative">
+      <div className="max-w-md mx-auto min-h-screen relative">
         <button 
           onClick={() => signOut(auth)} 
-          className="absolute top-4 right-4 z-40 text-slate-600 hover:text-red-500"
+          className="absolute top-4 right-4 z-40 text-white/50 hover:text-white"
         >
           <LogOut size={20} />
         </button>

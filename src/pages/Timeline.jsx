@@ -1,108 +1,137 @@
-import { useState, useEffect } from 'react'
-import { Heart, Plane, Star, GraduationCap, Clock } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore'
+import { db, auth } from '../lib/firebase'
+import { Calendar, Plus, Trash2, Heart } from 'lucide-react'
 
 export default function Timeline() {
-  const [tempo, setTempo] = useState({ anos: 0, meses: 0, dias: 0 })
-  const dataInicio = new Date(2025, 7, 10) 
+  const [events, setEvents] = useState([])
+  const [newItem, setNewItem] = useState({ data: '', titulo: '', descricao: '' })
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    const calcularTempo = () => {
-      const agora = new Date()
-      const diferenca = agora - dataInicio
-      if (diferenca < 0) {
-        setTempo({ anos: 0, meses: 0, dias: 0 })
-        return
-      }
-      const diasTotais = Math.floor(diferenca / (1000 * 60 * 60 * 24))
-      const anos = Math.floor(diasTotais / 365)
-      const meses = Math.floor((diasTotais % 365) / 30)
-      const dias = (diasTotais % 365) % 30
-      setTempo({ anos, meses, dias })
-    }
-    calcularTempo()
-    const timer = setInterval(calcularTempo, 1000)
-    return () => clearInterval(timer)
+    if (auth.currentUser) setIsAdmin(true)
+    // Trazemos tudo ordenado por createdAt para garantir a ordem de criação
+    const q = query(collection(db, "timeline"), orderBy("createdAt", "desc"))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+    })
+    return () => unsubscribe()
   }, [])
 
-  const eventos = [
-    { 
-      data: '10 Ago 2025', 
-      titulo: 'O Primeiro Encontro', 
-      descricao: 'O dia em que nos conhecemos e tudo começou.',
-      icon: Heart,
-      cor: 'bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
-    },
-    { 
-      data: '25 Out 2025', 
-      titulo: 'Primeira ida à Dom Expedito', 
-      descricao: 'Aquele final de semana na praia foi inesquecível.',
-      icon: Plane,
-      cor: 'bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
-    },
-    { 
-      data: '31 Out 2025', 
-      titulo: 'Minha Formatura', 
-      descricao: 'Um momento especial em que você esteve ao meu lado.',
-      icon: GraduationCap,
-      cor: 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]'
-    },
-    { 
-      data: '13 Dez 2025', 
-      titulo: 'O Pedido de Namoro 💍', 
-      descricao: 'O dia oficial do nosso "Sim". O início do nosso pra sempre!',
-      icon: Heart,
-      cor: 'bg-pink-600 shadow-[0_0_20px_rgba(219,39,119,0.8)] animate-pulse' // Destaque extra
-    },
-    { 
-      data: 'Hoje', 
-      titulo: 'Criando este App', 
-      descricao: 'Um presente feito com código e amor para celebrar nossa história.',
-      icon: Star,
-      cor: 'bg-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]'
-    },
-  ]
+  const addEvent = async (e) => {
+    e.preventDefault()
+    if (!newItem.titulo || !newItem.data) return
+    await addDoc(collection(db, "timeline"), { 
+      data: newItem.data,          // Salva como 'data' (português)
+      titulo: newItem.titulo,      // Salva como 'titulo'
+      descricao: newItem.descricao, // Salva como 'descricao'
+      createdAt: serverTimestamp() 
+    })
+    setNewItem({ data: '', titulo: '', descricao: '' })
+  }
+
+  const deleteEvent = async (id) => {
+    if (window.confirm("Apagar essa memória?")) {
+      await deleteDoc(doc(db, "timeline", id))
+    }
+  }
+
+  // Função poderosa para formatar qualquer tipo de data
+  const formatarData = (val, criacao) => {
+    // 1. Tenta a data manual
+    if (val) {
+      if (val.toDate) return val.toDate().toLocaleDateString('pt-BR') // Se for timestamp
+      // Se for texto YYYY-MM-DD
+      try {
+        const partes = val.split('-')
+        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`
+      } catch(e) {}
+      return val // Retorna o texto original se não conseguir formatar
+    }
+    // 2. Se não tiver data manual, usa a data de criação do sistema
+    if (criacao && criacao.toDate) {
+      return criacao.toDate().toLocaleDateString('pt-BR')
+    }
+    return "Data Especial"
+  }
 
   return (
-    <div className="p-6 pb-24 min-h-screen bg-slate-950">
-      
-      <div className="flex flex-col items-center mb-12">
-        <h1 className="text-3xl font-bold text-center text-white mb-6">Nossa História ⏳</h1>
+    <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="torn-container w-full max-w-md min-h-[80vh]">
         
-        <div className="flex gap-4 mb-4">
-          <div className="bg-slate-900 p-3 rounded-xl border border-pink-500/30 min-w-[70px] text-center">
-            <span className="block text-2xl font-bold text-white">{tempo.anos}</span>
-            <span className="text-[10px] text-pink-400 uppercase">Anos</span>
-          </div>
-          <div className="bg-slate-900 p-3 rounded-xl border border-pink-500/30 min-w-[70px] text-center">
-            <span className="block text-2xl font-bold text-white">{tempo.meses}</span>
-            <span className="text-[10px] text-pink-400 uppercase">Meses</span>
-          </div>
-          <div className="bg-slate-900 p-3 rounded-xl border border-pink-500/30 min-w-[70px] text-center">
-            <span className="block text-2xl font-bold text-white">{tempo.dias}</span>
-            <span className="text-[10px] text-pink-400 uppercase">Dias</span>
-          </div>
+        <div className="text-center mb-8">
+          <Calendar className="w-8 h-8 mx-auto text-passion mb-2" />
+          <h2 className="text-4xl font-serif font-bold text-passion italic">Nossa História</h2>
+          <p className="text-sm text-passion/60 mt-2 font-serif">"Cada segundo ao seu lado..."</p>
         </div>
-        <p className="text-slate-500 text-xs">Juntos desde 10/08/2025</p>
-      </div>
 
-      <div className="relative border-l-2 border-slate-800 ml-4 space-y-12">
-        {eventos.map((evento, index) => (
-          <div key={index} className="relative pl-8">
-            <div className={`absolute -left-[11px] top-0 w-5 h-5 rounded-full border-2 border-slate-950 ${evento.cor}`}></div>
-            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-800 px-2 py-1 rounded">
-                  {evento.data}
-                </span>
-                <evento.icon size={20} className="text-slate-500" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-100">{evento.titulo}</h3>
-              <p className="text-slate-400 mt-2 text-sm leading-relaxed">
-                {evento.descricao}
-              </p>
+        {isAdmin && (
+          <form onSubmit={addEvent} className="mb-10 bg-red-50 p-4 rounded-lg border border-passion/10">
+            <h3 className="text-passion font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-widest">
+              <Plus size={16} /> Nova Memória
+            </h3>
+            <div className="space-y-3">
+              <input 
+                type="date" 
+                value={newItem.data} 
+                onChange={e => setNewItem({...newItem, data: e.target.value})}
+                className="w-full p-2 bg-white border border-passion/20 rounded text-passion focus:outline-none focus:border-passion"
+              />
+              <input 
+                placeholder="Título (ex: O primeiro beijo)" 
+                value={newItem.titulo} 
+                onChange={e => setNewItem({...newItem, titulo: e.target.value})}
+                className="w-full p-2 bg-white border border-passion/20 rounded text-passion placeholder-passion/40 focus:outline-none focus:border-passion"
+              />
+              <textarea 
+                placeholder="Detalhes desse dia..." 
+                value={newItem.descricao} 
+                onChange={e => setNewItem({...newItem, descricao: e.target.value})}
+                className="w-full p-2 bg-white border border-passion/20 rounded text-passion placeholder-passion/40 focus:outline-none focus:border-passion h-20"
+              />
+              <button type="submit" className="w-full bg-passion text-white py-2 rounded font-bold hover:bg-red-900 transition shadow-md">
+                Gravar na Eternidade
+              </button>
             </div>
-          </div>
-        ))}
+          </form>
+        )}
+
+        <div className="relative pl-4 space-y-8">
+          <div className="timeline-line"></div>
+
+          {events.map((evt) => {
+            // Lógica "Universal": Pega o primeiro que encontrar
+            const dataFinal = evt.data || evt.date;
+            const tituloFinal = evt.titulo || evt.title || "Sem título";
+            const descFinal = evt.descricao || evt.desc || evt.description;
+
+            return (
+              <div key={evt.id} className="relative pl-8 group">
+                <div className="absolute left-0 top-1 w-8 h-8 bg-white border-2 border-passion rounded-full flex items-center justify-center z-10 shadow-sm">
+                  <Heart size={14} className="text-passion fill-passion" />
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition">
+                  <span className="text-xs font-bold text-passion/50 tracking-wider block mb-1">
+                    {formatarData(dataFinal, evt.createdAt)}
+                  </span>
+                  
+                  <h3 className="text-xl font-serif text-passion font-bold">{tituloFinal}</h3>
+                  
+                  {descFinal && (
+                    <p className="text-gray-600 mt-2 text-sm leading-relaxed font-serif">{descFinal}</p>
+                  )}
+                  
+                  {isAdmin && (
+                    <button onClick={() => deleteEvent(evt.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

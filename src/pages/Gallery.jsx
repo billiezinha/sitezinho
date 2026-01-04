@@ -1,90 +1,110 @@
-import { Heart } from 'lucide-react'
-import kiss from '../assets/kiss.jpeg'
-import wicked from '../assets/wicked.jpeg'
-import camisas from '../assets/camisas.jpeg'
-import formatura from '../assets/formei.jpeg'
-import alianças from '../assets/alianças.jpeg' 
+import { useState, useEffect } from 'react'
+import { Image as ImageIcon, Upload, Trash2, X } from 'lucide-react'
+import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { db, auth } from '../lib/firebase'
 
 export default function Gallery() {
-  const fotos = [
-    { 
-      id: 1, 
-      url: kiss, 
-      legenda: 'um dos primeiros encontros',
-      rotacao: 'rotate-2'
-    },
-    { 
-      id: 2, 
-      url: wicked, 
-      legenda: 'wickeeeeed 🎶',
-      rotacao: '-rotate-1'
-    },
-    { 
-      id: 3, 
-      url: camisas, 
-      legenda: 'o dia das camisas combinando',
-      rotacao: 'rotate-3'
-    },
-    { 
-      id: 4, 
-      url: formatura, 
-      legenda: 'formeiiii',
-      rotacao: '-rotate-2'
-    },
-    { 
-      id: 5, 
-      url: alianças, 
-      legenda: 'Eu te amo tantoooo', // Mude a legenda aqui
-      rotacao: 'rotate-1'
-    },
-  ]
+  const [photos, setPhotos] = useState([])
+  const [newPhotoUrl, setNewPhotoUrl] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState(null)
+
+  useEffect(() => {
+    if (auth.currentUser) setIsAdmin(true)
+    const q = query(collection(db, "gallery"), orderBy("createdAt", "desc"))
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setPhotos(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+    return () => unsubscribe()
+  }, [])
+
+  const addPhoto = async (e) => {
+    e.preventDefault()
+    if (!newPhotoUrl) return
+    // Salva sempre como 'url' para padronizar daqui pra frente
+    await addDoc(collection(db, "gallery"), { url: newPhotoUrl, createdAt: serverTimestamp() })
+    setNewPhotoUrl('')
+  }
+
+  const deletePhoto = async (id) => {
+    if (window.confirm("Remover esta foto?")) await deleteDoc(doc(db, "gallery", id))
+  }
 
   return (
-    <div className="p-6 pb-24 min-h-screen bg-slate-950 overflow-hidden">
-      
-      <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold text-white mb-2">Nossas Fotos 📸</h1>
-        <p className="text-slate-400 text-sm">Momentos revelados</p>
-      </div>
+    <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="torn-container w-full max-w-md min-h-[80vh]">
+        
+        <div className="text-center mb-8">
+          <ImageIcon className="w-8 h-8 mx-auto text-passion mb-2" />
+          <h2 className="text-4xl font-serif font-bold text-passion italic">Nossas Fotos</h2>
+          <p className="text-sm text-passion/60 mt-2 font-serif">"Retratos do nosso amor"</p>
+        </div>
 
-      {/* Grid de Polaroids */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-2xl mx-auto">
-        {fotos.map((foto) => (
-          <div 
-            key={foto.id} 
-            className={`relative group bg-white p-4 pb-12 shadow-2xl transition duration-500 hover:scale-105 hover:rotate-0 hover:z-10 ${foto.rotacao}`}
-          >
-            {/* O "Prendedor" ou Fita adesiva */}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-pink-500/20 backdrop-blur-sm rotate-1 shadow-sm border border-white/20"></div>
+        {isAdmin && (
+          <form onSubmit={addPhoto} className="mb-8 flex gap-2">
+            <input 
+              type="text" 
+              placeholder="Cole o link da imagem aqui..." 
+              value={newPhotoUrl}
+              onChange={e => setNewPhotoUrl(e.target.value)}
+              className="flex-1 p-2 bg-red-50 border border-passion/20 rounded-l text-passion text-sm focus:outline-none"
+            />
+            <button type="submit" className="bg-passion text-white px-4 rounded-r hover:bg-red-900 transition">
+              <Upload size={18} />
+            </button>
+          </form>
+        )}
 
-            {/* A Imagem */}
-            <div className="aspect-square w-full overflow-hidden bg-gray-100 mb-4 border border-gray-100">
-              <img 
-                src={foto.url} 
-                alt={foto.legenda} 
-                className="w-full h-full object-cover filter sepia-[0.2] group-hover:sepia-0 transition duration-500"
-              />
-            </div>
+        <div className="grid grid-cols-2 gap-4 pb-20">
+          {photos.map((photo, index) => {
+            // CHECKLIST UNIVERSAL DE IMAGENS
+            // Verifica se a imagem está em 'url', 'image', 'imagem', 'link' ou 'src'
+            const imgSrc = photo.url || photo.image || photo.imagem || photo.link || photo.src;
+            
+            // Se não encontrar imagem nenhuma, pula este item
+            if (!imgSrc) return null;
 
-            {/* Legenda Manuscrita */}
-            <div className="absolute bottom-2 left-0 w-full text-center">
-              <p className="text-gray-800 font-serif font-medium italic text-lg opacity-80">
-                {foto.legenda}
-              </p>
-            </div>
-
-            {/* Coraçãozinho no canto */}
-            <div className="absolute bottom-4 right-4 text-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <Heart size={20} fill="currentColor" />
-            </div>
+            return (
+              <div 
+                key={photo.id} 
+                className="photo-frame cursor-pointer relative group"
+                style={{ transform: `rotate(${index % 2 === 0 ? '-2deg' : '2deg'})` }}
+                onClick={() => setSelectedPhoto(imgSrc)}
+              >
+                <div className="aspect-square overflow-hidden bg-gray-100">
+                  <img src={imgSrc} alt="Nós" className="w-full h-full object-cover sepia-[20%]" />
+                </div>
+                {/* Fita adesiva visual */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-4 bg-yellow-100/80 shadow-sm rotate-1"></div>
+                
+                {isAdmin && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); deletePhoto(photo.id); }}
+                    className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        
+        {/* Mensagem se não houver fotos */}
+        {photos.length === 0 && (
+          <div className="text-center text-passion/50 py-10 italic">
+            Nenhuma foto no álbum ainda...
           </div>
-        ))}
-      </div>
-      
-      <div className="text-center mt-16">
-        <p className="text-slate-600 text-xs italic">
-          "Guardando cada instante com você."
-        </p>
+        )}
+
+        {selectedPhoto && (
+          <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setSelectedPhoto(null)}>
+            <button className="absolute top-4 right-4 text-white/80 hover:text-white">
+              <X size={32} />
+            </button>
+            <img src={selectedPhoto} alt="Zoom" className="max-w-full max-h-[85vh] rounded shadow-2xl border-4 border-white" />
+          </div>
+        )}
       </div>
     </div>
   )

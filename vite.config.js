@@ -12,14 +12,14 @@ export default defineConfig({
         name: 'Nosso Sitezinho',
         short_name: 'Amor',
         description: 'Um cantinho especial para nós dois.',
-        theme_color: '#020617', // Cor do fundo (slate-950)
-        background_color: '#020617',
-        display: 'standalone', // Faz parecer um app nativo (sem barra de url)
+        theme_color: '#7f1d1d', // Mudei para Vermelho Paixão
+        background_color: '#7f1d1d', // Fundo de carregamento vermelho
+        display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         icons: [
           {
-            src: '/pwa-192x192.png', // Vamos criar esses ícones abaixo
+            src: '/pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },

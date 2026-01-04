@@ -1,100 +1,97 @@
 import { useState, useEffect } from 'react'
-import { Feather, Heart, Plus, X, Save } from 'lucide-react'
+import { Feather, PenTool, Trash2 } from 'lucide-react'
+import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
 
 export default function Poems() {
-  const [poemas, setPoemas] = useState([])
-  const [mostraForm, setMostraForm] = useState(false)
-  const [titulo, setTitulo] = useState('')
-  const [texto, setTexto] = useState('')
-  const [dataExibicao, setDataExibicao] = useState('')
+  const [poems, setPoems] = useState([])
+  // Voltamos a usar 'titulo' e 'texto' para bater com seu banco de dados antigo
+  const [newPoem, setNewPoem] = useState({ titulo: '', texto: '' })
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
+    if (auth.currentUser) setIsAdmin(true)
     const q = query(collection(db, "poems"), orderBy("createdAt", "desc"))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPoemas(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+    const unsubscribe = onSnapshot(q, (snap) => {
+      // Mapeia os dados garantindo que pegamos tudo
+      setPoems(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     })
     return () => unsubscribe()
   }, [])
 
-  const salvarPoema = async (e) => {
+  const addPoem = async (e) => {
     e.preventDefault()
-    if (!titulo.trim() || !texto.trim()) return
+    if (!newPoem.texto) return
 
-    try {
-      // Salva o poema
-      await addDoc(collection(db, "poems"), {
-        titulo,
-        texto,
-        data: dataExibicao || new Date().toLocaleDateString('pt-BR'),
-        createdAt: serverTimestamp(),
-        senderId: auth.currentUser?.uid,
-        userName: auth.currentUser?.displayName
-      })
-
-      // AQUI: Envia Notificação para a Central
-      await addDoc(collection(db, "notifications"), {
-        title: `📜 Novo Poema: ${titulo}`,
-        text: "Corre pra ler, escrevi pensando em você...",
-        createdAt: serverTimestamp(),
-        senderId: auth.currentUser?.uid,
-        isSystem: true
-      })
-      
-      setTitulo('')
-      setTexto('')
-      setDataExibicao('')
-      setMostraForm(false)
-    } catch (error) {
-      console.error("Erro ao salvar poema:", error)
-    }
+    // Salvando com os nomes originais: titulo e texto
+    await addDoc(collection(db, "poems"), { 
+      titulo: newPoem.titulo, 
+      texto: newPoem.texto,
+      data: new Date().toLocaleDateString('pt-BR'), // Mantendo o formato de data antigo também
+      createdAt: serverTimestamp() 
+    })
+    setNewPoem({ titulo: '', texto: '' })
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 pb-24 relative">
-      <div className="text-center mb-10 mt-4">
-        <div className="inline-block p-3 rounded-full bg-pink-500/10 mb-4 border border-pink-500/20">
-          <Feather size={32} className="text-pink-500" />
+    <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="torn-container w-full max-w-md my-8 min-h-[80vh]">
+        
+        <div className="text-center mb-8">
+          <Feather className="w-8 h-8 mx-auto text-passion mb-2" />
+          <h2 className="text-4xl font-serif font-bold text-passion italic">Versos de Amor</h2>
+          <p className="text-sm text-passion/60 mt-2 font-serif">"Palavras que o coração dita..."</p>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">Nossos Versos</h1>
-        <p className="text-slate-400 text-sm italic">
-          "Palavras que meu coração sussurrou para você."
-        </p>
-      </div>
 
-      <button onClick={() => setMostraForm(!mostraForm)} className="absolute top-6 right-6 text-pink-500 hover:text-pink-400 bg-pink-500/10 p-2 rounded-full">
-        {mostraForm ? <X size={24} /> : <Plus size={24} />}
-      </button>
+        {isAdmin && (
+          <form onSubmit={addPoem} className="mb-10 space-y-3 bg-red-50 p-4 rounded border border-passion/10">
+            <input 
+              placeholder="Título do Poema" 
+              value={newPoem.titulo}
+              onChange={e => setNewPoem({...newPoem, titulo: e.target.value})}
+              className="w-full p-2 bg-transparent border-b border-passion/30 text-passion placeholder-passion/40 focus:outline-none focus:border-passion font-serif"
+            />
+            <textarea 
+              placeholder="Escreva seus sentimentos..." 
+              value={newPoem.texto}
+              onChange={e => setNewPoem({...newPoem, texto: e.target.value})}
+              className="w-full p-2 bg-transparent border border-passion/20 rounded h-32 text-passion placeholder-passion/40 focus:outline-none focus:border-passion font-serif italic text-sm"
+            />
+            <button type="submit" className="w-full flex items-center justify-center gap-2 bg-passion text-white py-2 rounded shadow hover:bg-red-900 transition font-serif">
+              <PenTool size={16} /> Publicar Verso
+            </button>
+          </form>
+        )}
 
-      {mostraForm && (
-        <form onSubmit={salvarPoema} className="bg-slate-900 p-4 rounded-xl border border-pink-500/30 mb-8 max-w-md mx-auto space-y-3 shadow-xl shadow-pink-900/20 animate-fade-in">
-          <input type="text" placeholder="Título do Poema" value={titulo} onChange={e => setTitulo(e.target.value)} className="w-full bg-slate-950 text-white p-3 rounded-lg border border-slate-800 focus:border-pink-500 outline-none" />
-          <input type="text" placeholder="Data (ex: 12 Jun 2025)" value={dataExibicao} onChange={e => setDataExibicao(e.target.value)} className="w-full bg-slate-950 text-white p-3 rounded-lg border border-slate-800 focus:border-pink-500 outline-none text-sm" />
-          <textarea placeholder="Escreva seus versos aqui..." value={texto} onChange={e => setTexto(e.target.value)} rows={4} className="w-full bg-slate-950 text-white p-3 rounded-lg border border-slate-800 focus:border-pink-500 outline-none resize-none font-serif" />
-          <button type="submit" className="w-full bg-pink-600 text-white py-2 rounded-lg font-bold hover:bg-pink-500 flex items-center justify-center gap-2">
-            <Save size={18} /> Publicar Verso
-          </button>
-        </form>
-      )}
-
-      <div className="space-y-8 max-w-md mx-auto">
-        {poemas.length === 0 && !mostraForm && <p className="text-center text-slate-600">Nenhum poema escrito ainda...</p>}
-        {poemas.map((poema) => (
-          <div key={poema.id} className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl opacity-20 group-hover:opacity-50 transition duration-500 blur"></div>
-            <div className="relative bg-slate-900 p-6 rounded-2xl border border-slate-800">
-              <div className="flex justify-between items-start mb-4 border-b border-slate-800 pb-2">
-                <h2 className="text-xl font-bold text-slate-100 font-serif">{poema.titulo}</h2>
-                <span className="text-xs text-pink-400 font-mono mt-1">{poema.data}</span>
+        <div className="space-y-12 pb-10">
+          {poems.map((poem) => (
+            <div key={poem.id} className="relative text-center space-y-2 px-4">
+              {/* Ornamento superior */}
+              <div className="text-passion/20 mb-2">❦</div>
+              
+              {/* Aqui usamos poem.titulo e poem.texto para exibir os dados antigos corretamente */}
+              {poem.titulo && <h3 className="text-xl font-bold text-passion font-serif">{poem.titulo}</h3>}
+              
+              <p className="text-gray-800 font-serif italic leading-loose whitespace-pre-wrap text-lg">
+                {poem.texto}
+              </p>
+              
+              {/* Assinatura/Data - Tenta usar a data salva ou formata o timestamp */}
+              <div className="text-xs text-passion/40 mt-4 font-serif">
+                — {poem.data || (poem.createdAt?.toDate ? poem.createdAt.toDate().toLocaleDateString() : '')} —
               </div>
-              <p className="text-slate-300 leading-relaxed whitespace-pre-line font-serif text-lg italic opacity-90">{poema.texto}</p>
-              <div className="mt-4 flex justify-end">
-                <Heart size={16} className="text-pink-600/50" fill="currentColor" />
-              </div>
+              
+              {isAdmin && (
+                <button 
+                  onClick={() => deleteDoc(doc(db, "poems", poem.id))}
+                  className="absolute top-0 right-0 text-gray-300 hover:text-red-500"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
