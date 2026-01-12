@@ -714,20 +714,34 @@ export default function Home() {
     frame();
   }, [])
 
+  // --- CRONÔMETRO CORRIGIDO ---
   useEffect(() => {
     // 10 de Agosto de 2025 às 20:15
-    const dataInicioNamoro = new Date("2025-08-10T20:15:00") 
+    const dataInicio = new Date("2025-08-10T20:15:00") 
 
     const timer = setInterval(() => {
       const agora = new Date()
-      const diferenca = Math.max(0, agora - dataInicioNamoro)
+      
+      let anos = agora.getFullYear() - dataInicio.getFullYear()
+      let meses = agora.getMonth() - dataInicio.getMonth()
+      let dias = agora.getDate() - dataInicio.getDate()
+      let horas = agora.getHours() - dataInicio.getHours()
+      let minutos = agora.getMinutes() - dataInicio.getMinutes()
+      let segundos = agora.getSeconds() - dataInicio.getSeconds()
 
-      const anos = Math.floor(diferenca / (1000 * 60 * 60 * 24 * 365))
-      const meses = Math.floor((diferenca % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30))
-      const dias = Math.floor((diferenca % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24))
-      const horas = Math.floor((diferenca % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      const minutos = Math.floor((diferenca % (1000 * 60 * 60)) / (1000 * 60))
-      const segundos = Math.floor((diferenca % (1000 * 60)) / 1000)
+      // Ajustes para valores negativos (vai-um reverso)
+      if (segundos < 0) { segundos += 60; minutos--; }
+      if (minutos < 0) { minutos += 60; horas--; }
+      if (horas < 0) { horas += 24; dias--; }
+      
+      if (dias < 0) {
+        // Pega o último dia do mês anterior para saber quantos dias subtrair
+        const mesAnterior = new Date(agora.getFullYear(), agora.getMonth(), 0)
+        dias += mesAnterior.getDate()
+        meses--
+      }
+      
+      if (meses < 0) { meses += 12; anos--; }
 
       setTempoJuntos({ anos, meses, dias, horas, minutos, segundos })
     }, 1000)
@@ -963,7 +977,7 @@ export default function Home() {
             {listaCupons.map((cupom) => {
               const usado = cuponsUsados.includes(cupom.id);
               const IconeDoCupom = getCouponIcon(cupom.id); 
-              const isGold = cupom.id === 10; // Identifica o cupom especial
+              const isGold = cupom.id === 10;
 
               return (
                 <div 
@@ -974,7 +988,6 @@ export default function Home() {
                     ${!usado && isGold ? "bg-gradient-to-r from-amber-300 via-yellow-500 to-amber-400 border-2 border-yellow-200 shadow-xl shadow-yellow-500/30 scale-105 my-2" : ""}
                   `}
                 >
-                  {/* Efeito de brilho extra para o dourado */}
                   {!usado && isGold && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
 
                   <div className="flex items-center gap-3 relative z-10">
