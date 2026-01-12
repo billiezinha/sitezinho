@@ -518,7 +518,7 @@ import { useState, useEffect } from 'react'
 import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import confetti from 'canvas-confetti' // Certifique-se de ter instalado: npm install canvas-confetti
+import confetti from 'canvas-confetti' 
 
 // Componente para padronizar os títulos das seções
 const SectionHeader = ({ icon: Icon, title }) => (
@@ -612,7 +612,8 @@ export default function Home() {
     { id: 6, text: "Jogar Video Game 🎮" },
     { id: 7, text: "Cozinhar Juntos 👨‍🍳" },
     { id: 8, text: "Ir ao Cinema 🍿" },
-    { id: 9, text: "Café na Cama ☕" }
+    { id: 9, text: "Café na Cama ☕" },
+    { id: 10, text: "Surpresa Especial 🎁" }
   ]
 
   const getCouponIcon = (id) => {
@@ -625,7 +626,8 @@ export default function Home() {
       case 6: return Gamepad2;      
       case 7: return ChefHat;       
       case 8: return Film;          
-      case 9: return Coffee;        
+      case 9: return Coffee;
+      case 10: return Gift;
       default: return Ticket;
     }
   }
@@ -683,9 +685,7 @@ export default function Home() {
 
   // --- EFEITOS ---
   
-  // Efeito da Chuva de Confetes ao Carregar e Scroll Top
   useEffect(() => {
-    // Garante que a página comece no topo
     window.scrollTo(0, 0);
 
     const duration = 3000;
@@ -779,8 +779,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center p-2 relative">
       
-      {/* --- MODAL DA CELEBRAÇÃO (1 MÊS) - POSICIONADO NO INÍCIO --- */}
-      {/* O 'fixed inset-0' e 'z-[100]' garantem que fique na frente de tudo */}
+      {/* --- MODAL DA CELEBRAÇÃO (1 MÊS) --- */}
       {celebracaoAtiva && (
         <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
           <div className="bg-white p-8 rounded-xl max-w-sm w-full text-center relative shadow-2xl border-4 border-passion/20">
@@ -789,8 +788,11 @@ export default function Home() {
             </div>
             
             <h2 className="mt-4 text-3xl font-serif font-bold text-passion mb-2">Feliz 1 Mês!</h2>
-            <p className="text-gray-600 mb-6 italic">
+            <p className="text-gray-600 mb-2 italic">
               30 dias fazendo meus dias mais felizes. Obrigado por ser meu parceiro incrível!
+            </p>
+            <p className="text-passion font-bold text-sm mb-6 animate-pulse">
+              P.S.: Fica atento que tem um cupom especial novo lá embaixo ;-)
             </p>
             
             <div className="space-y-3">
@@ -808,10 +810,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* --- CONTEÚDO PRINCIPAL DO SITE --- */}
+      {/* --- CONTEÚDO PRINCIPAL --- */}
       <div className="torn-container space-y-12">
         
-        {/* Cabeçalho - GATILHO SECRETO */}
+        {/* Cabeçalho */}
         <div className="text-center relative select-none">
           <div onClick={handleSecretTrigger} className="cursor-pointer active:scale-90 transition-transform inline-block">
              <Mail className="w-8 h-8 mx-auto mb-3 text-passion animate-bounce-slow" strokeWidth={1.5} /> 
@@ -961,16 +963,23 @@ export default function Home() {
             {listaCupons.map((cupom) => {
               const usado = cuponsUsados.includes(cupom.id);
               const IconeDoCupom = getCouponIcon(cupom.id); 
+              const isGold = cupom.id === 10; // Identifica o cupom especial
 
               return (
                 <div 
                   key={cupom.id}
                   onClick={() => !usado && usarCupom(cupom.id, cupom.text)}
-                  className={`ticket-card ${usado ? "opacity-50 grayscale cursor-default bg-gray-400" : ""}`}
+                  className={`ticket-card relative overflow-hidden transition-all duration-300
+                    ${usado ? "opacity-50 grayscale cursor-default bg-gray-400" : ""}
+                    ${!usado && isGold ? "bg-gradient-to-r from-amber-300 via-yellow-500 to-amber-400 border-2 border-yellow-200 shadow-xl shadow-yellow-500/30 scale-105 my-2" : ""}
+                  `}
                 >
+                  {/* Efeito de brilho extra para o dourado */}
+                  {!usado && isGold && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
+
                   <div className="flex items-center gap-3 relative z-10">
-                     <span className={`w-2 h-2 rounded-full ${usado ? 'bg-gray-600' : 'bg-white'}`}></span>
-                     <span className="font-bold text-sm tracking-wide">{cupom.text}</span>
+                     <span className={`w-2 h-2 rounded-full ${usado ? 'bg-gray-600' : 'bg-white'} ${isGold ? 'shadow-[0_0_8px_rgba(255,255,255,0.8)]' : ''}`}></span>
+                     <span className={`font-bold text-sm tracking-wide ${isGold ? 'text-white text-shadow-sm' : ''}`}>{cupom.text}</span>
                   </div>
                   <IconeDoCupom size={20} strokeWidth={2} className={`relative z-10 ${usado ? "text-gray-600" : "text-white"}`} />
                 </div>
