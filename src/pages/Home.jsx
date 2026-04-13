@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import confetti from 'canvas-confetti'
 
 // Componente para padronizar os títulos das seções
 const SectionHeader = ({ icon: Icon, title }) => (
@@ -16,6 +18,13 @@ const SectionHeader = ({ icon: Icon, title }) => (
 export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
   const [cuponsUsados, setCuponsUsados] = useState([])
+  
+  // Modal de Celebração de 4 meses
+  const [showCelebration, setShowCelebration] = useState(() => !sessionStorage.getItem('celebration_seen'))
+  const closeCelebration = () => {
+    sessionStorage.setItem('celebration_seen', 'true')
+    setShowCelebration(false)
+  }
   
   // Estados do Potinho e Motivos
   const [ideiaDate, setIdeiaDate] = useState(null)
@@ -254,7 +263,44 @@ export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center p-2 relative">
       
-      {/* Removido Modal de Celebração */}
+      {/* Modal de Celebração de 4 Meses */}
+      {showCelebration && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 animate-fade-in backdrop-blur-sm">
+          <div className="bg-red-50 border-2 border-passion p-8 rounded-2xl max-w-sm w-full text-center relative shadow-[0_0_40px_rgba(200,0,0,0.3)]">
+            <button 
+              onClick={closeCelebration} 
+              className="absolute top-3 right-3 text-passion/50 hover:text-passion border-none bg-transparent"
+            >
+              <X size={24} />
+            </button>
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <Heart size={64} className="text-passion fill-passion animate-pulse" />
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-bold text-2xl">4</span>
+              </div>
+            </div>
+            <h2 className="text-3xl text-passion font-serif font-bold mb-4 italic">Feliz 4 Meses!</h2>
+            <p className="text-gray-700 font-serif mb-6 leading-relaxed">
+              Feliz dia 13! Mais um mês incrível ao seu lado. Que a nossa história continue sendo escrita com muito amor, carinho e momentos inesquecíveis.<br/><br/>
+              Te amo infinitamente, Wesley! ❤️
+            </p>
+            <button 
+              onClick={() => {
+                confetti({
+                  particleCount: 150,
+                  spread: 80,
+                  origin: { y: 0.6 },
+                  colors: ['#8b0000', '#d4af37', '#ffffff']
+                })
+                closeCelebration()
+              }}
+              className="bg-passion hover:bg-red-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95 border-none"
+            >
+              Comemorar 🎉
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
       <div className="torn-container space-y-12">
@@ -399,6 +445,23 @@ export default function Home() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Jogo Secreto */}
+        <div className="space-y-4">
+          <SectionHeader icon={Gamepad2} title="Desafio dos 4 Meses" />
+          <div className="bg-gradient-to-r from-passion to-red-900 p-6 rounded-lg shadow-lg relative overflow-hidden text-center group">
+            <Gamepad2 className="absolute -right-4 -bottom-4 text-white/10 w-32 h-32 transform group-hover:scale-110 transition-transform" />
+            <div className="relative z-10 space-y-4">
+              <h4 className="text-2xl font-bold font-serif text-white italic">A Jornada do Coração</h4>
+              <p className="text-white/80 text-sm leading-relaxed">
+                Mostre suas habilidades de gamer, vença o nosso joguinho especial e destrave uma recompensa exclusiva na vida real hoje mesmo!
+              </p>
+              <Link to="/game" className="inline-block bg-white text-passion px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-neutral-100 active:scale-95 transition-transform">
+                Pressione START 🎮
+              </Link>
+            </div>
           </div>
         </div>
 

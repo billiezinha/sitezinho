@@ -11,6 +11,7 @@ import Timeline from './pages/Timeline'
 // import Gallery from './pages/Gallery' -> REMOVIDO
 import Poems from './pages/Poems'
 import Login from './pages/Login'
+import Game from './pages/Game'
 
 // --- Controlador de Notificações ---
 function NotificationController({ user }) {
@@ -87,6 +88,7 @@ function NotificationController({ user }) {
 // --- Navegação Vermelha Sólida (Com Ícones) ---
 function Navigation() {
   const location = useLocation();
+  if (location.pathname === '/game') return null;
   
   const getIconStyle = (path) => {
     const isActive = location.pathname === path;
@@ -155,6 +157,7 @@ export default function App() {
           <Route path="/timeline" element={<Timeline />} />
           {/* Rota da Galeria REMOVIDA aqui */}
           <Route path="/poems" element={<Poems />} />
+          <Route path="/game" element={<Game />} />
         </Routes>
         <Navigation />
       </div>
