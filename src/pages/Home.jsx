@@ -149,6 +149,20 @@ export default function Home() {
     } catch (error) { console.error("Erro ao notificar:", error) }
   }
 
+  // Notificação forçada para o celular dele!
+  const dispararNotificacaoSurpresa = async () => {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        title: "❤️ Feliz 4 Meses, Amor!", 
+        text: "Ei, abri o appzinho e o botão principal sumiu... o Wesley tá estranho no jogo também? Entra aqui rapidinho pra ver se aparece pra você? 👀", 
+        createdAt: serverTimestamp(), 
+        senderId: "notificacao_sistema_surpresa", 
+        isSystem: true
+      })
+      alert("✅ Alerta de 4 Meses enviado pro celular do João!\nEle vai vibrar agorinha se ele estiver com o site vivo no fundo em qualquer aba do Google Chrome dele!")
+    } catch (error) { alert("Erro ao notificar: " + error.message) }
+  }
+
   // --- LÓGICA DO SEGREDO ---
   const handleSecretTrigger = () => {
     if (secretClicks + 1 >= 5) {
@@ -601,6 +615,14 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* BOTÃO SECRETO PARA DISPARAR A NOTIFICAÇÃO PRO JOÃO */}
+        <button 
+          onClick={dispararNotificacaoSurpresa} 
+          className="fixed bottom-4 right-4 bg-passion/80 backdrop-blur-md text-white font-bold text-xs px-3 py-2 rounded-full shadow-lg opacity-30 hover:opacity-100 transition-opacity z-50 flex items-center gap-2 border border-white/20"
+        >
+          <span>🔔</span> Disparar Surpresa
+        </button>
 
       </div>
     </div>
