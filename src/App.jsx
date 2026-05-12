@@ -12,6 +12,7 @@ import Timeline from './pages/Timeline'
 import Poems from './pages/Poems'
 import Login from './pages/Login'
 import Game from './pages/Game'
+import JoaoIA from './pages/JoaoIA'
 
 // --- Controlador de Notificações ---
 function NotificationController({ user }) {
@@ -88,7 +89,7 @@ function NotificationController({ user }) {
 // --- Navegação Vermelha Sólida (Com Ícones) ---
 function Navigation() {
   const location = useLocation();
-  if (location.pathname === '/game') return null;
+  if (location.pathname === '/game' || location.pathname === '/joao-ia') return null;
   
   const getIconStyle = (path) => {
     const isActive = location.pathname === path;
@@ -158,6 +159,7 @@ export default function App() {
           {/* Rota da Galeria REMOVIDA aqui */}
           <Route path="/poems" element={<Poems />} />
           <Route path="/game" element={<Game />} />
+          <Route path="/joao-ia" element={<JoaoIA />} />
         </Routes>
         <Navigation />
       </div>

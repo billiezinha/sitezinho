@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
@@ -18,6 +18,10 @@ const SectionHeader = ({ icon: Icon, title }) => (
 export default function Home() {
   const [mensagemAtiva, setMensagemAtiva] = useState(null)
   const [cuponsUsados, setCuponsUsados] = useState([])
+  const navigate = useNavigate()
+  
+  const [glitchClicks, setGlitchClicks] = useState(0)
+  const [isGlitching, setIsGlitching] = useState(false)
   
   // Modal de Celebração de 4 meses
   const [showCelebration, setShowCelebration] = useState(() => !sessionStorage.getItem('celebration_seen'))
@@ -275,7 +279,7 @@ export default function Home() {
   const abrirCarta = (tipo, texto) => { setMensagemAtiva(texto) }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-2 relative">
+    <div className={`min-h-screen flex items-center justify-center p-2 relative ${isGlitching ? 'animate-glitch' : ''}`}>
       
       {/* Modal de Celebração de 4 Meses */}
       {showCelebration && (
@@ -332,7 +336,20 @@ export default function Home() {
 
         {/* Cronômetro */}
         <div className="bg-passion text-white p-6 rounded-lg shadow-inner relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-2 opacity-10"><Clock size={100} /></div>
+          <div 
+            className="absolute top-0 right-0 p-2 opacity-10 cursor-pointer z-20"
+            onClick={() => {
+              const newClicks = glitchClicks + 1;
+              setGlitchClicks(newClicks);
+              if (newClicks >= 5) {
+                setIsGlitching(true);
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+                setTimeout(() => navigate('/joao-ia'), 1500);
+              }
+            }}
+          >
+            <Clock size={100} />
+          </div>
           <h3 className="text-lg font-serif italic mb-4 flex items-center gap-2 relative z-10">
             <Clock size={18} /> Tempo juntos
           </h3>
