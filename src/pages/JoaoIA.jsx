@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Send, ArrowLeft, Bot, User, Sparkles } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Instância do Gemini
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+// Instância do Gemini (Tenta ler do .env, senão usa a chave direta para evitar bugs de cache)
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyAIOpq7-r2tX5Guv6fyE7bofNADp5X6BvQ';
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // O cérebro invisível da IA (System Prompt)
@@ -71,7 +71,7 @@ export default function JoaoIA() {
       setMessages(prev => [...prev, botResponse]);
     } catch (error) {
       console.error(error);
-      const errorMsg = { id: Date.now() + 1, sender: 'bot', text: "Opa, meus circuitos deram uma travada (Erro de Conexão). O João real teria me respondido mais rápido! Tenta de novo?" };
+      const errorMsg = { id: Date.now() + 1, sender: 'bot', text: `Opa, meus circuitos deram uma travada (Erro: ${error.message}). O João real teria me respondido mais rápido! Tenta de novo?` };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsTyping(false);

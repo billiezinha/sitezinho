@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Força o Vite a reiniciar para carregar o .env.local
 export default defineConfig({
   plugins: [
     react(),
