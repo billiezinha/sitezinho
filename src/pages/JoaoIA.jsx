@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Send, ArrowLeft, Bot, User, Sparkles } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Instância do Gemini (Tenta ler do .env, senão usa a chave direta para evitar bugs de cache)
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyAIOpq7-r2tX5Guv6fyE7bofNADp5X6BvQ';
+// Instância do Gemini (Usa estritamente do .env.local para segurança)
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // O cérebro invisível da IA (System Prompt)
