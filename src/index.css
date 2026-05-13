@@ -6,6 +6,10 @@
   --font-serif: "Times New Roman", Times, serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--color-passion);
   font-family: var(--font-serif);

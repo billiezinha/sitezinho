@@ -70,9 +70,9 @@ export default function JoaoIA() {
   };
 
   return (
-    <div className="min-h-screen bg-[#111] text-white flex flex-col font-sans">
+    <div className="fixed inset-0 z-50 bg-[#111] text-white flex flex-col font-sans max-w-md mx-auto h-[100dvh]">
       {/* Header */}
-      <header className="bg-[#222] p-4 flex items-center shadow-md border-b border-white/10 z-10 sticky top-0">
+      <header className="bg-[#222] p-4 flex-none flex items-center shadow-md border-b border-white/10">
         <button onClick={() => navigate('/')} className="text-gray-400 hover:text-white mr-4 transition-colors">
           <ArrowLeft size={24} />
         </button>
@@ -84,19 +84,19 @@ export default function JoaoIA() {
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-6 pb-28">
+      <main className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`flex max-w-[85%] gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+          <div key={msg.id} className={`flex w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`flex max-w-[90%] gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               
               <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-1 shadow-sm ${msg.sender === 'user' ? 'bg-neutral-700' : 'bg-passion'}`}>
                 {msg.sender === 'user' ? <User size={16} /> : <Bot size={18} />}
               </div>
               
-              <div className={`p-4 rounded-2xl shadow-md text-[15px] leading-relaxed ${
+              <div className={`p-4 rounded-2xl shadow-md text-[15px] leading-relaxed break-words whitespace-pre-wrap ${
                 msg.sender === 'user' 
-                  ? 'bg-neutral-800 text-white rounded-tr-none border border-neutral-700' 
-                  : 'bg-gradient-to-br from-red-900 to-passion text-white rounded-tl-none border border-red-800/50'
+                  ? 'bg-neutral-800 text-white rounded-tr-none border border-neutral-700 text-right' 
+                  : 'bg-gradient-to-br from-red-900 to-passion text-white rounded-tl-none border border-red-800/50 text-left'
               }`}>
                 {msg.text}
               </div>
@@ -105,8 +105,8 @@ export default function JoaoIA() {
         ))}
         
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="flex max-w-[85%] gap-3 flex-row">
+          <div className="flex justify-start w-full">
+            <div className="flex max-w-[90%] gap-3 flex-row">
               <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-1 shadow-sm bg-passion">
                 <Bot size={18} />
               </div>
@@ -122,7 +122,7 @@ export default function JoaoIA() {
       </main>
 
       {/* Input Area */}
-      <footer className="bg-[#222] p-4 border-t border-white/10 fixed bottom-0 w-full left-1/2 -translate-x-1/2 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+      <footer className="bg-[#222] p-4 flex-none border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <div className="max-w-md mx-auto">
           <form onSubmit={handleSend} className="flex gap-2">
             <input

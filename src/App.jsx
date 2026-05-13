@@ -137,7 +137,14 @@ export default function App() {
     return () => unsubscribe()
   }, [])
 
-  if (loading) return <div className="min-h-screen bg-passion flex items-center justify-center text-[#d4af37] font-serif text-xl">Carregando nosso amor...</div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-passion flex flex-col items-center justify-center text-[#d4af37] font-serif">
+        <Heart size={48} className="animate-bounce mb-4 drop-shadow-lg" />
+        <p className="text-xl animate-pulse tracking-wider">Carregando nosso amor...</p>
+      </div>
+    )
+  }
 
   if (!user) return <Login />
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices } from 'lucide-react'
+import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices, Bot } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
 import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import confetti from 'canvas-confetti'
@@ -23,10 +23,10 @@ export default function Home() {
   const [glitchClicks, setGlitchClicks] = useState(0)
   const [isGlitching, setIsGlitching] = useState(false)
   
-  // Modal de Celebração de 4 meses
-  const [showCelebration, setShowCelebration] = useState(() => !sessionStorage.getItem('celebration_seen'))
+  // Modal de Celebração de 5 meses
+  const [showCelebration, setShowCelebration] = useState(() => !sessionStorage.getItem('celebration_seen_5'))
   const closeCelebration = () => {
-    sessionStorage.setItem('celebration_seen', 'true')
+    sessionStorage.setItem('celebration_seen_5', 'true')
     setShowCelebration(false)
   }
   
@@ -157,13 +157,13 @@ export default function Home() {
   const dispararNotificacaoSurpresa = async () => {
     try {
       await addDoc(collection(db, "notifications"), {
-        title: "❤️ Feliz 4 Meses, Amor!", 
+        title: "❤️ Feliz 5 Meses, Amor!", 
         text: "Ei, abri o appzinho e o botão principal sumiu... o Wesley tá estranho no jogo também? Entra aqui rapidinho pra ver se aparece pra você? 👀", 
         createdAt: serverTimestamp(), 
         senderId: "notificacao_sistema_surpresa", 
         isSystem: true
       })
-      alert("✅ Alerta de 4 Meses enviado pro celular do João!\nEle vai vibrar agorinha se ele estiver com o site vivo no fundo em qualquer aba do Google Chrome dele!")
+      alert("✅ Alerta de 5 Meses enviado pro celular do João!\nEle vai vibrar agorinha se ele estiver com o site vivo no fundo em qualquer aba do Google Chrome dele!")
     } catch (error) { alert("Erro ao notificar: " + error.message) }
   }
 
@@ -294,10 +294,10 @@ export default function Home() {
             <div className="flex justify-center mb-4">
               <div className="relative">
                 <Heart size={64} className="text-passion fill-passion animate-pulse" />
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-bold text-2xl">4</span>
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-bold text-2xl">5</span>
               </div>
             </div>
-            <h2 className="text-3xl text-passion font-serif font-bold mb-4 italic">Feliz 4 Meses!</h2>
+            <h2 className="text-3xl text-passion font-serif font-bold mb-4 italic">Feliz 5 Meses!</h2>
             <p className="text-gray-700 font-serif mb-6 leading-relaxed">
               Feliz dia 13! Mais um mês incrível ao seu lado. Que a nossa história continue sendo escrita com muito amor, carinho e momentos inesquecíveis.<br/><br/>
               Te amo infinitamente, Wesley! ❤️
@@ -332,6 +332,23 @@ export default function Home() {
             Para Wesley
           </h1>
           <div className="h-0.5 w-16 bg-passion/30 mx-auto mt-4 rounded-full"></div>
+        </div>
+
+        {/* João.IA */}
+        <div className="bg-gradient-to-br from-red-900 to-passion text-white p-6 rounded-lg shadow-[0_10px_30px_rgba(150,0,0,0.3)] relative overflow-hidden text-center group border border-red-800/50">
+          <Sparkles className="absolute -right-4 -bottom-4 text-white/10 w-32 h-32 transform group-hover:scale-110 transition-transform" />
+          <div className="relative z-10 space-y-4">
+            <div className="flex justify-center gap-2 items-center">
+              <Bot size={28} className="animate-pulse" />
+              <h3 className="text-2xl font-bold font-serif italic">João.IA</h3>
+            </div>
+            <p className="text-white/80 text-sm leading-relaxed">
+              Minha Inteligência Artificial programada exclusivamente para cuidar de você. Faça perguntas, peça conselhos ou só ouça o quanto você é incrível.
+            </p>
+            <Link to="/joao-ia" className="inline-block bg-white text-passion px-8 py-3 rounded-full font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-neutral-100 active:scale-95 transition-transform">
+              Falar com a IA 🤖
+            </Link>
+          </div>
         </div>
 
         {/* Cronômetro */}
