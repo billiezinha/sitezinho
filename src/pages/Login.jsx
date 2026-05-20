@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 import { Heart, Key } from 'lucide-react'
@@ -35,16 +35,6 @@ export default function Login() {
     }
   }
 
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider()
-    try {
-      const result = await signInWithPopup(auth, provider)
-      await registrarAcesso(result.user, "Google")
-    } catch (error) {
-      console.error(error)
-      setError("Erro ao conectar com Google. Tente novamente.")
-    }
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-passion">
@@ -92,24 +82,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Divisor */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500 font-serif italic">ou use sua conta</span>
-          </div>
-        </div>
-
-        {/* Botão Google */}
-        <button 
-          onClick={handleGoogleLogin}
-          className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-full font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-          Entrar com Google
-        </button>
 
       </div>
     </div>

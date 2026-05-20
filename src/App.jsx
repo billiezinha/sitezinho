@@ -5,6 +5,8 @@ import { Heart, Calendar, Feather, LogOut, Bell } from 'lucide-react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
+import { LocalNotifications } from '@capacitor/local-notifications'
+import { Capacitor } from '@capacitor/core'
 
 import Home from './pages/Home'
 import Timeline from './pages/Timeline'
@@ -14,23 +16,40 @@ import Login from './pages/Login'
 import Game from './pages/Game'
 import JoaoIA from './pages/JoaoIA'
 
-// --- Controlador de Notificações ---
+// --- Controlador de Notificações (Web + Android Nativo) ---
 function NotificationController({ user }) {
-  const [permission, setPermission] = useState(Notification.permission)
+  const [permission, setPermission] = useState('prompt')
 
   const requestPermission = async () => {
-    const result = await Notification.requestPermission()
-    setPermission(result)
-    
-    if (result === 'granted' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.showNotification("🔔 Notificações Ativas", {
-          body: "O sistema de alertas está pronto!",
-          icon: '/vite.svg'
+    if (Capacitor.isNativePlatform()) {
+      const res = await LocalNotifications.requestPermissions()
+      setPermission(res.display === 'granted' ? 'granted' : 'denied')
+      if (res.display === 'granted') {
+        LocalNotifications.schedule({
+          notifications: [{
+            title: "🔔 Notificações Ativas",
+            body: "O sistema de alertas está pronto no seu celular!",
+            id: Date.now(),
+            schedule: { at: new Date(Date.now() + 1000) }
+          }]
         })
-      })
+      }
+    } else {
+      const result = await Notification.requestPermission()
+      setPermission(result)
     }
   }
+
+  // Verifica permissão atual nativamente
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      LocalNotifications.checkPermissions().then(res => {
+        if (res.display === 'granted') setPermission('granted')
+      })
+    } else {
+      setPermission(Notification.permission)
+    }
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -47,21 +66,22 @@ function NotificationController({ user }) {
           const isRecent = (Date.now() - data.createdAt.toMillis() < 60000)
           const isFromOthers = data.senderId !== user.uid
 
-          if (isRecent && isFromOthers && Notification.permission === "granted") {
+          if (isRecent && isFromOthers) {
             try { navigator.vibrate([200, 100, 200]); } catch(e){}
 
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(data.title || "✨ Nova Notificação", {
+            if (Capacitor.isNativePlatform() && permission === 'granted') {
+              // Notificação Nativa do Android
+              LocalNotifications.schedule({
+                notifications: [{
+                  title: data.title || "✨ Nova Notificação",
                   body: data.text,
-                  icon: '/vite.svg',
-                  badge: '/vite.svg',
-                  tag: 'system-notif-' + change.doc.id,
-                  renotify: true
-                })
+                  id: Date.now(),
+                  schedule: { at: new Date(Date.now() + 500) }
+                }]
               })
-            } else {
-              new Notification(data.title, { body: data.text, icon: '/vite.svg' })
+            } else if (!Capacitor.isNativePlatform() && permission === 'granted') {
+              // Notificação Web (Navegador)
+              new Notification(data.title || "✨ Nova Notificação", { body: data.text, icon: '/vite.svg' })
             }
           }
         }
@@ -69,7 +89,7 @@ function NotificationController({ user }) {
     })
 
     return () => unsubscribe()
-  }, [user])
+  }, [user, permission])
 
   if (permission !== 'granted') {
     return (

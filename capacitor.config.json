@@ -1,0 +1,9 @@
+{
+  "appId": "com.joaof.amor",
+  "appName": "João e Wesley",
+  "webDir": "dist",
+  "server": {
+    "url": "https://sitezinho-three.vercel.app",
+    "cleartext": true
+  }
+}
