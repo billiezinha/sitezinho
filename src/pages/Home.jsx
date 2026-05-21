@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices, Bot } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
-import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore'
 import confetti from 'canvas-confetti'
 
 // Componente para padronizar os títulos das seções
@@ -147,11 +147,29 @@ export default function Home() {
 
   const enviarNotificacao = async (titulo, texto) => {
     try {
+      // 1. Salva no Firebase para histórico
       await addDoc(collection(db, "notifications"), {
         title: titulo, text: texto, createdAt: serverTimestamp(), senderId: auth.currentUser?.uid, isSystem: true
       })
+      
+      // 2. Busca todos os tokens (menos o meu) para enviar Push
+      const tokensSnap = await getDocs(collection(db, "pushTokens"))
+      const tokens = []
+      tokensSnap.forEach(doc => {
+        if (doc.id !== auth.currentUser?.uid) tokens.push(doc.data().token)
+      })
+
+      // 3. Aciona a API da Vercel
+      if (tokens.length > 0) {
+        await fetch('/api/sendPush', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: titulo, body: texto, tokens })
+        })
+      }
     } catch (error) { console.error("Erro ao notificar:", error) }
   }
+
 
   // Notificação forçada para o celular dele!
   const dispararNotificacaoSurpresa = async () => {

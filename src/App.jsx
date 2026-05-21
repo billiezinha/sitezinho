@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 // Removi o 'Image' dos imports pois não será mais usado
 import { Heart, Calendar, Feather, LogOut, Bell } from 'lucide-react'
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, limit, onSnapshot, doc, setDoc } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { PushNotifications } from '@capacitor/push-notifications'
 import { Capacitor } from '@capacitor/core'
 
 import Home from './pages/Home'
@@ -22,17 +23,11 @@ function NotificationController({ user }) {
 
   const requestPermission = async () => {
     if (Capacitor.isNativePlatform()) {
-      const res = await LocalNotifications.requestPermissions()
-      setPermission(res.display === 'granted' ? 'granted' : 'denied')
-      if (res.display === 'granted') {
-        LocalNotifications.schedule({
-          notifications: [{
-            title: "🔔 Notificações Ativas",
-            body: "O sistema de alertas está pronto no seu celular!",
-            id: Date.now(),
-            schedule: { at: new Date(Date.now() + 1000) }
-          }]
-        })
+      // Pedir permissão Push Notification
+      const res = await PushNotifications.requestPermissions()
+      setPermission(res.receive === 'granted' ? 'granted' : 'denied')
+      if (res.receive === 'granted') {
+        PushNotifications.register()
       }
     } else {
       const result = await Notification.requestPermission()
@@ -40,16 +35,39 @@ function NotificationController({ user }) {
     }
   }
 
-  // Verifica permissão atual nativamente
+  // Verifica permissão atual nativamente e registra ouvintes
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      LocalNotifications.checkPermissions().then(res => {
-        if (res.display === 'granted') setPermission('granted')
+      PushNotifications.checkPermissions().then(res => {
+        if (res.receive === 'granted') {
+          setPermission('granted')
+          PushNotifications.register()
+        }
+      })
+
+      // Ouvir geração do token
+      PushNotifications.addListener('registration', async (token) => {
+        if (user) {
+          try {
+            await setDoc(doc(db, "pushTokens", user.uid), { token: token.value })
+          } catch(e) {}
+        }
+      })
+
+      // Ouvir notificação em primeiro plano
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        try { navigator.vibrate([200, 100, 200]); } catch(e){}
       })
     } else {
       setPermission(Notification.permission)
     }
-  }, [])
+
+    return () => {
+      if (Capacitor.isNativePlatform()) {
+        PushNotifications.removeAllListeners()
+      }
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) return
