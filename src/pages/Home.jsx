@@ -37,6 +37,7 @@ export default function Home() {
   
   // Estado do Cronômetro
   const [tempoJuntos, setTempoJuntos] = useState({ anos: 0, meses: 0, dias: 0, horas: 0, minutos: 0, segundos: 0 })
+  const [tempoNamoro, setTempoNamoro] = useState({ anos: 0, meses: 0, dias: 0, horas: 0, minutos: 0, segundos: 0 })
 
   // --- ESTADOS DA SESSÃO SECRETA ---
   const [secretClicks, setSecretClicks] = useState(0)
@@ -210,36 +211,40 @@ export default function Home() {
   
   // Removido useEffect de Confetti
 
-  // Cronômetro (Mantido o cálculo corrigido)
+  // Cronômetro
   useEffect(() => {
     // 10 de Agosto de 2025 às 20:15
     const dataInicio = new Date("2025-08-10T20:15:00") 
+    // Namoro: 13 de Dezembro de 2025
+    const dataNamoro = new Date("2025-12-13T00:00:00")
 
     const timer = setInterval(() => {
       const agora = new Date()
       
-      let anos = agora.getFullYear() - dataInicio.getFullYear()
-      let meses = agora.getMonth() - dataInicio.getMonth()
-      let dias = agora.getDate() - dataInicio.getDate()
-      let horas = agora.getHours() - dataInicio.getHours()
-      let minutos = agora.getMinutes() - dataInicio.getMinutes()
-      let segundos = agora.getSeconds() - dataInicio.getSeconds()
+      const calcTempo = (inicio) => {
+        let anos = agora.getFullYear() - inicio.getFullYear()
+        let meses = agora.getMonth() - inicio.getMonth()
+        let dias = agora.getDate() - inicio.getDate()
+        let horas = agora.getHours() - inicio.getHours()
+        let minutos = agora.getMinutes() - inicio.getMinutes()
+        let segundos = agora.getSeconds() - inicio.getSeconds()
 
-      // Ajustes para valores negativos (vai-um reverso)
-      if (segundos < 0) { segundos += 60; minutos--; }
-      if (minutos < 0) { minutos += 60; horas--; }
-      if (horas < 0) { horas += 24; dias--; }
-      
-      if (dias < 0) {
-        // Pega o último dia do mês anterior para saber quantos dias subtrair
-        const mesAnterior = new Date(agora.getFullYear(), agora.getMonth(), 0)
-        dias += mesAnterior.getDate()
-        meses--
+        if (segundos < 0) { segundos += 60; minutos--; }
+        if (minutos < 0) { minutos += 60; horas--; }
+        if (horas < 0) { horas += 24; dias--; }
+        
+        if (dias < 0) {
+          const mesAnterior = new Date(agora.getFullYear(), agora.getMonth(), 0)
+          dias += mesAnterior.getDate()
+          meses--
+        }
+        
+        if (meses < 0) { meses += 12; anos--; }
+        return { anos, meses, dias, horas, minutos, segundos }
       }
-      
-      if (meses < 0) { meses += 12; anos--; }
 
-      setTempoJuntos({ anos, meses, dias, horas, minutos, segundos })
+      setTempoJuntos(calcTempo(dataInicio))
+      setTempoNamoro(calcTempo(dataNamoro))
     }, 1000)
 
     return () => clearInterval(timer)
@@ -369,49 +374,87 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Cronômetro */}
-        <div className="bg-passion text-white p-6 rounded-lg shadow-inner relative overflow-hidden">
-          <div 
-            className="absolute top-0 right-0 p-2 opacity-10 cursor-pointer z-20"
-            onClick={() => {
-              const newClicks = glitchClicks + 1;
-              setGlitchClicks(newClicks);
-              if (newClicks >= 5) {
-                setIsGlitching(true);
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
-                setTimeout(() => navigate('/joao-ia'), 1500);
-              }
-            }}
-          >
-            <Clock size={100} />
+        {/* Cronômetros */}
+        <div className="space-y-4">
+          <div className="bg-passion text-white p-6 rounded-lg shadow-inner relative overflow-hidden">
+            <div 
+              className="absolute top-0 right-0 p-2 opacity-10 cursor-pointer z-20"
+              onClick={() => {
+                const newClicks = glitchClicks + 1;
+                setGlitchClicks(newClicks);
+                if (newClicks >= 5) {
+                  setIsGlitching(true);
+                  if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+                  setTimeout(() => navigate('/joao-ia'), 1500);
+                }
+              }}
+            >
+              <Clock size={100} />
+            </div>
+            <h3 className="text-lg font-serif italic mb-4 flex items-center gap-2 relative z-10">
+              <Clock size={18} /> Desde o primeiro "Oi"
+            </h3>
+            <p className="text-xs opacity-70 mb-2 font-light">10 de Agosto de 2025</p>
+            <div className="grid grid-cols-3 gap-2 text-center relative z-10">
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-2xl font-bold">{tempoJuntos.anos}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Anos</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-2xl font-bold">{tempoJuntos.meses}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Meses</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-2xl font-bold">{tempoJuntos.dias}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Dias</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-xl font-bold">{tempoJuntos.horas}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Hrs</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-xl font-bold">{tempoJuntos.minutos}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Min</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm animate-pulse">
+                <span className="block text-xl font-bold">{tempoJuntos.segundos}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Seg</span>
+              </div>
+            </div>
           </div>
-          <h3 className="text-lg font-serif italic mb-4 flex items-center gap-2 relative z-10">
-            <Clock size={18} /> Tempo juntos
-          </h3>
-          <div className="grid grid-cols-3 gap-2 text-center relative z-10">
-            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
-              <span className="block text-2xl font-bold">{tempoJuntos.anos}</span>
-              <span className="text-[10px] uppercase tracking-wider opacity-80">Anos</span>
-            </div>
-            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
-              <span className="block text-2xl font-bold">{tempoJuntos.meses}</span>
-              <span className="text-[10px] uppercase tracking-wider opacity-80">Meses</span>
-            </div>
-            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
-              <span className="block text-2xl font-bold">{tempoJuntos.dias}</span>
-              <span className="text-[10px] uppercase tracking-wider opacity-80">Dias</span>
-            </div>
-            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
-              <span className="block text-xl font-bold">{tempoJuntos.horas}</span>
-              <span className="text-[10px] uppercase tracking-wider opacity-80">Hrs</span>
-            </div>
-            <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
-              <span className="block text-xl font-bold">{tempoJuntos.minutos}</span>
-              <span className="text-[10px] uppercase tracking-wider opacity-80">Min</span>
-            </div>
-            <div className="bg-white/10 rounded p-2 backdrop-blur-sm animate-pulse">
-              <span className="block text-xl font-bold">{tempoJuntos.segundos}</span>
-              <span className="text-[10px] uppercase tracking-wider opacity-80">Seg</span>
+
+          {/* Cronômetro Oficial do Namoro */}
+          <div className="bg-gradient-to-r from-red-900 to-passion text-white p-6 rounded-lg shadow-[0_5px_15px_rgba(200,0,0,0.3)] relative overflow-hidden border border-red-800/50">
+            <Heart className="absolute -right-4 -top-4 w-32 h-32 opacity-10" />
+            <h3 className="text-lg font-serif italic mb-4 flex items-center gap-2 relative z-10">
+              <Heart size={18} className="animate-pulse" fill="currentColor" /> Tempo de Namoro
+            </h3>
+            <p className="text-xs opacity-70 mb-2 font-light">13 de Dezembro de 2025</p>
+            <div className="grid grid-cols-3 gap-2 text-center relative z-10">
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-2xl font-bold">{tempoNamoro.anos}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Anos</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-2xl font-bold">{tempoNamoro.meses}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Meses</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-2xl font-bold">{tempoNamoro.dias}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Dias</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-xl font-bold">{tempoNamoro.horas}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Hrs</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm">
+                <span className="block text-xl font-bold">{tempoNamoro.minutos}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Min</span>
+              </div>
+              <div className="bg-white/10 rounded p-2 backdrop-blur-sm animate-pulse">
+                <span className="block text-xl font-bold">{tempoNamoro.segundos}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Seg</span>
+              </div>
             </div>
           </div>
         </div>
@@ -420,9 +463,9 @@ export default function Home() {
         <div className="space-y-3">
           <SectionHeader icon={Music} title="Nossa Trilha" />
           <iframe 
-            style={{borderRadius: '4px'}} 
-            src="https://open.spotify.com/embed/playlist/3lOVuBQtMtSee3LKsaE4FU?utm_source=generator" 
-            width="100%" height="88" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" 
+            style={{borderRadius: '12px', backgroundColor: 'transparent'}} 
+            src="https://open.spotify.com/embed/playlist/3lOVuBQtMtSee3LKsaE4FU?utm_source=generator&theme=0" 
+            width="100%" height="380" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" 
             className="shadow-sm border border-passion/10"
           ></iframe>
         </div>

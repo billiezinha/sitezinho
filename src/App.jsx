@@ -124,38 +124,43 @@ function NotificationController({ user }) {
   return null
 }
 
-// --- Navegação Vermelha Sólida (Com Ícones) ---
+// --- Navegação Estilo Apple (iOS Floating Dock) ---
 function Navigation() {
   const location = useLocation();
   if (location.pathname === '/game' || location.pathname === '/joao-ia') return null;
   
-  const getIconStyle = (path) => {
+  const getTabStyle = (path) => {
     const isActive = location.pathname === path;
     return {
-      color: "white",
-      // Se ativo, preenche com branco. Se inativo, transparente.
-      fill: isActive ? "white" : "none", 
-      // Aumentei strokeWidth para 2.5 (mais grosso e visível)
-      strokeWidth: isActive ? 0 : 2.5, 
-      className: `transition-all duration-300 ${isActive ? "scale-110 drop-shadow-md" : "opacity-70 hover:opacity-100"}`
+      wrapperClass: `flex flex-col items-center justify-center w-20 h-[52px] rounded-full transition-all duration-500 ease-out ${isActive ? "bg-white/20 shadow-sm backdrop-blur-md" : "hover:bg-white/10"}`,
+      iconClass: `transition-all duration-300 ${isActive ? "text-white scale-110 drop-shadow-md" : "text-white/60"}`,
+      textClass: `text-[9px] mt-0.5 tracking-wider font-semibold transition-colors duration-300 ${isActive ? "text-white" : "text-white/60"}`,
+      // Fill e stroke para Lucide
+      fill: isActive ? "white" : "none",
+      strokeWidth: isActive ? 0 : 2
     };
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full h-20 z-50 bg-passion shadow-[0_-4px_10px_rgba(0,0,0,0.3)] border-t border-white/10">
-      <div className="flex justify-around items-center h-full max-w-md mx-auto pb-2">
-        <Link to="/" className="flex flex-col items-center justify-center w-full group">
-          <Heart size={30} {...getIconStyle("/")} /> 
-          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Início</span>
+    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-max px-2 h-16 z-50 bg-[#1a1a1a]/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 rounded-full overflow-hidden flex items-center justify-center" style={{ backdropFilter: 'blur(24px) saturate(150%)', WebkitBackdropFilter: 'blur(24px) saturate(150%)' }}>
+      <div className="flex items-center gap-1">
+        <Link to="/" className="group">
+          <div className={getTabStyle("/").wrapperClass}>
+            <Heart size={22} className={getTabStyle("/").iconClass} fill={getTabStyle("/").fill} strokeWidth={getTabStyle("/").strokeWidth} /> 
+            <span className={getTabStyle("/").textClass}>Início</span>
+          </div>
         </Link>
-        <Link to="/timeline" className="flex flex-col items-center justify-center w-full group">
-          <Calendar size={30} {...getIconStyle("/timeline")} />
-          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Nós</span>
+        <Link to="/timeline" className="group">
+          <div className={getTabStyle("/timeline").wrapperClass}>
+            <Calendar size={22} className={getTabStyle("/timeline").iconClass} fill={getTabStyle("/timeline").fill} strokeWidth={getTabStyle("/timeline").strokeWidth} />
+            <span className={getTabStyle("/").textClass}>Nós</span>
+          </div>
         </Link>
-        {/* Link da Galeria REMOVIDO aqui */}
-        <Link to="/poems" className="flex flex-col items-center justify-center w-full group">
-          <Feather size={30} {...getIconStyle("/poems")} />
-          <span className="text-[10px] text-white mt-1 tracking-widest font-bold opacity-90">Versos</span>
+        <Link to="/poems" className="group">
+          <div className={getTabStyle("/poems").wrapperClass}>
+            <Feather size={22} className={getTabStyle("/poems").iconClass} fill={getTabStyle("/poems").fill} strokeWidth={getTabStyle("/poems").strokeWidth} />
+            <span className={getTabStyle("/").textClass}>Versos</span>
+          </div>
         </Link>
       </div>
     </nav>
