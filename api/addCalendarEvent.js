@@ -26,8 +26,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const serviceAccount = JSON.parse(process.env.GOOGLE_CALENDAR_CREDENTIALS);
-    const calendarId = process.env.GOOGLE_CALENDAR_ID;
+    let credsRaw = process.env.GOOGLE_CALENDAR_CREDENTIALS || '{}';
+    // Remove aspas simples ou duplas que possam ter vindo do Vercel
+    if (credsRaw.startsWith("'") && credsRaw.endsWith("'")) credsRaw = credsRaw.slice(1, -1);
+    if (credsRaw.startsWith('"') && credsRaw.endsWith('"')) credsRaw = credsRaw.slice(1, -1);
+    
+    // Se a chave vier com \\n literal, substitui por newline de verdade
+    credsRaw = credsRaw.replace(/\\n/g, '\n');
+
+    const serviceAccount = JSON.parse(credsRaw);
+    const calendarId = process.env.GOOGLE_CALENDAR_ID?.replace(/['"]/g, '');
 
     const jwtClient = new google.auth.JWT({
       email: serviceAccount.client_email,
