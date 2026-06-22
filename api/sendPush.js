@@ -2,8 +2,21 @@ import admin from 'firebase-admin';
 
 // Inicializa o Firebase Admin usando a chave salva na Vercel
 if (!admin.apps.length) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    let credsRaw = process.env.FIREBASE_SERVICE_ACCOUNT || '{}';
+    if (credsRaw.startsWith("'") && credsRaw.endsWith("'")) credsRaw = credsRaw.slice(1, -1);
+
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(credsRaw);
+    } catch (e) {
+      const fixedCreds = credsRaw.replace(/\r?\n/g, '\\n');
+      serviceAccount = JSON.parse(fixedCreds);
+    }
+
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
