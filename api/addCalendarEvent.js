@@ -34,14 +34,22 @@ export default async function handler(req, res) {
     }
 
     let credsRaw = process.env.GOOGLE_CALENDAR_CREDENTIALS || '{}';
-    // Remove aspas simples ou duplas que possam ter vindo do Vercel
     if (credsRaw.startsWith("'") && credsRaw.endsWith("'")) credsRaw = credsRaw.slice(1, -1);
-    if (credsRaw.startsWith('"') && credsRaw.endsWith('"')) credsRaw = credsRaw.slice(1, -1);
-    
-    // Se a chave vier com \\n literal, substitui por newline de verdade
-    credsRaw = credsRaw.replace(/\\n/g, '\n');
 
-    const serviceAccount = JSON.parse(credsRaw);
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(credsRaw);
+    } catch (e) {
+      // Em último caso, se a Vercel enviou quebras de linha literais, conserta para o JSON aceitar
+      const fixedCreds = credsRaw.replace(/\r?\n/g, '\\n');
+      serviceAccount = JSON.parse(fixedCreds);
+    }
+
+    // Garante que o private_key tenha as quebras de linha certas para o JWT
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
     const calendarId = process.env.GOOGLE_CALENDAR_ID.replace(/['"]/g, '');
 
     const jwtClient = new google.auth.JWT({
