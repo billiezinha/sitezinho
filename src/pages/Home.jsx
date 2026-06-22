@@ -1,9 +1,41 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices, Bot } from 'lucide-react'
+import { MapPin, Music, Ticket, Mail, Coffee, Leaf, Laugh, Sparkles, Clapperboard, Utensils, Gift, IceCream, Gamepad2, ChefHat, Film, Heart, Lightbulb, RefreshCw, Clock, Star, Flame, Lock, X, Dices, Bot, Smile, Frown, Angry, MessageSquareHeart, Trash2, Send, CheckCircle2, CalendarHeart, Plus, CalendarCheck, ExternalLink } from 'lucide-react'
 import { db, auth } from '../lib/firebase'
-import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, arrayUnion, setDoc, getDoc, collection, addDoc, serverTimestamp, getDocs, query, orderBy, deleteDoc } from 'firebase/firestore'
 import confetti from 'canvas-confetti'
+import { motion, AnimatePresence } from 'framer-motion'
+
+// --- LISTAS PARA FUNCIONALIDADES DIÁRIAS ---
+const perguntasDiarias = [
+  "Qual foi o momento exato em que você percebeu que me amava?",
+  "Qual é a sua memória favorita da nossa primeira semana juntos?",
+  "O que eu faço que te faz dar o sorriso mais sincero?",
+  "Se pudéssemos fugir para qualquer lugar agora, para onde iríamos?",
+  "Qual música toca na sua cabeça quando você pensa em mim?",
+  "Qual mania minha você achava estranha mas aprendeu a amar?",
+  "Se nosso amor fosse um filme, qual seria o gênero e o final?",
+  "O que você mais admira em mim que eu raramente percebo?",
+  "Qual foi a maior surpresa que eu já te fiz?",
+  "Em que momento do seu dia você mais sente a minha falta?"
+];
+
+const desafiosSemanais = [
+  "Tirem uma foto engraçada fazendo careta hoje!",
+  "Faça uma massagem surpresa (pelo menos 5 minutinhos) no parceiro.",
+  "Mande um áudio cantando a nossa música.",
+  "Cozinhem o jantar juntos hoje sem usar celular.",
+  "Deixe um bilhetinho escondido para o parceiro achar.",
+  "Elogie algo no parceiro que você nunca elogiou antes."
+];
+
+const getDiaDoAno = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = (now - start) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+};
+const getSemanaDoAno = () => Math.floor(getDiaDoAno() / 7);
 
 // Componente para padronizar os títulos das seções
 const SectionHeader = ({ icon: Icon, title }) => (
@@ -38,6 +70,24 @@ export default function Home() {
   // Estado do Cronômetro
   const [tempoJuntos, setTempoJuntos] = useState({ anos: 0, meses: 0, dias: 0, horas: 0, minutos: 0, segundos: 0 })
   const [tempoNamoro, setTempoNamoro] = useState({ anos: 0, meses: 0, dias: 0, horas: 0, minutos: 0, segundos: 0 })
+
+  // --- NOVOS ESTADOS ---
+  const [streak, setStreak] = useState(0)
+  const [meuHumor, setMeuHumor] = useState(null)
+  
+  const diaIndex = getDiaDoAno() % perguntasDiarias.length;
+  const perguntaHoje = perguntasDiarias[diaIndex];
+  const dataHojeStr = new Date().toISOString().split('T')[0];
+  const [minhaResposta, setMinhaResposta] = useState("")
+  const [respostaParceiro, setRespostaParceiro] = useState(null)
+  const [jaRespondi, setJaRespondi] = useState(false)
+
+  const semanaIndex = getSemanaDoAno() % desafiosSemanais.length;
+  const desafioSemana = desafiosSemanais[semanaIndex];
+  const [desafioConcluido, setDesafioConcluido] = useState(false);
+
+  const [lembretes, setLembretes] = useState([])
+  const [novoLembrete, setNovoLembrete] = useState({ title: "", date: "", time: "" })
 
   // --- ESTADOS DA SESSÃO SECRETA ---
   const [secretClicks, setSecretClicks] = useState(0)
@@ -264,6 +314,13 @@ export default function Home() {
         return
       }
       const data = snap.data()
+      if (data.streak) setStreak(data.streak)
+      if (data.humorDiario && data.humorDiario.date === dataHojeStr) {
+        setMeuHumor(data.humorDiario.mood)
+      }
+      if (data.desafioConcluido && data.desafioConcluido.week === semanaIndex) {
+        setDesafioConcluido(data.desafioConcluido.done)
+      }
       const lastReset = data.lastReset ? data.lastReset.toDate() : null
       const now = new Date()
       let cicloAtualInicio = new Date(now)
@@ -301,53 +358,126 @@ export default function Home() {
 
   const abrirCarta = (tipo, texto) => { setMensagemAtiva(texto) }
 
+  // --- NOVOS HANDLERS E EFEITOS DIÁRIOS ---
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    // Lembretes
+    const qLembretes = query(collection(db, "lembretes"), orderBy("date", "asc"));
+    const unsubLembretes = onSnapshot(qLembretes, (snap) => {
+      setLembretes(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    // Pergunta do Dia
+    const perguntaRef = doc(db, "perguntasDia", dataHojeStr);
+    const unsubPergunta = onSnapshot(perguntaRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data[userId]) {
+          setJaRespondi(true);
+        }
+        const keys = Object.keys(data);
+        const partnerKey = keys.find(k => k !== userId && k !== 'createdAt');
+        if (partnerKey) {
+          setRespostaParceiro(data[partnerKey]);
+        }
+      }
+    });
+
+    return () => {
+      unsubLembretes();
+      unsubPergunta();
+    };
+  }, [dataHojeStr]);
+
+  const salvarHumor = async (humor) => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+    setMeuHumor(humor);
+    await updateDoc(doc(db, "appData", userId), {
+      humorDiario: { date: dataHojeStr, mood: humor }
+    });
+    if (humor === 'Triste' || humor === 'Estressado') {
+      await enviarNotificacao("❤️ Amor precisando de carinho", `O seu amor marcou o humor como ${humor}. Vá lá dar um abraço!`);
+    }
+  };
+
+  const enviarRespostaPergunta = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId || !minhaResposta.trim()) return;
+    const ref = doc(db, "perguntasDia", dataHojeStr);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, { [userId]: minhaResposta, createdAt: serverTimestamp() });
+    } else {
+      await updateDoc(ref, { [userId]: minhaResposta });
+    }
+    setJaRespondi(true);
+    await enviarNotificacao("💭 Pergunta do Dia", "Seu amor respondeu a pergunta do dia. Responda para ver o que ele disse!");
+  };
+
+  const adicionarLembrete = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId || !novoLembrete.title.trim() || !novoLembrete.date) return;
+    
+    // 1. Salva no Firebase
+    await addDoc(collection(db, "lembretes"), {
+      ...novoLembrete,
+      authorId: userId,
+      createdAt: serverTimestamp()
+    });
+    
+    // 2. Salva na Nuvem (Google Agenda) Automaticamente via API
+    try {
+      await fetch('/api/addCalendarEvent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: novoLembrete.title,
+          date: novoLembrete.date,
+          time: novoLembrete.time
+        })
+      });
+    } catch(e) { 
+      console.error('Erro na sincronização automática', e); 
+    }
+
+    setNovoLembrete({ title: "", date: "", time: "" });
+    await enviarNotificacao("📅 Novo Lembrete", "Marcamos um novo compromisso na nossa agenda!");
+  };
+
+  const deletarLembrete = async (id) => {
+    await deleteDoc(doc(db, "lembretes", id));
+  };
+
+  const marcarDesafio = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+    const newState = !desafioConcluido;
+    setDesafioConcluido(newState);
+    await updateDoc(doc(db, "appData", userId), {
+      desafioConcluido: { week: semanaIndex, done: newState }
+    });
+    if (newState) {
+      await enviarNotificacao("🏆 Desafio Concluído!", "Seu amor acabou de marcar o desafio semanal como concluído!");
+    }
+  };
+
   return (
     <div className={`min-h-screen flex items-center justify-center p-2 relative ${isGlitching ? 'animate-glitch' : ''}`}>
       
-      {/* Modal de Celebração de 4 Meses */}
-      {showCelebration && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 animate-fade-in backdrop-blur-sm">
-          <div className="bg-red-50 border-2 border-passion p-8 rounded-2xl max-w-sm w-full text-center relative shadow-[0_0_40px_rgba(200,0,0,0.3)]">
-            <button 
-              onClick={closeCelebration} 
-              className="absolute top-3 right-3 text-passion/50 hover:text-passion border-none bg-transparent"
-            >
-              <X size={24} />
-            </button>
-            <div className="flex justify-center mb-4">
-              <div className="relative">
-                <Heart size={64} className="text-passion fill-passion animate-pulse" />
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-bold text-2xl">5</span>
-              </div>
-            </div>
-            <h2 className="text-3xl text-passion font-serif font-bold mb-4 italic">Feliz 5 Meses!</h2>
-            <p className="text-gray-700 font-serif mb-6 leading-relaxed">
-              Feliz dia 13! Mais um mês incrível ao seu lado. Que a nossa história continue sendo escrita com muito amor, carinho e momentos inesquecíveis.<br/><br/>
-              Te amo infinitamente, Wesley! ❤️
-            </p>
-            <button 
-              onClick={() => {
-                confetti({
-                  particleCount: 150,
-                  spread: 80,
-                  origin: { y: 0.6 },
-                  colors: ['#8b0000', '#d4af37', '#ffffff']
-                })
-                closeCelebration()
-              }}
-              className="bg-passion hover:bg-red-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95 border-none"
-            >
-              Comemorar 🎉
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* --- CONTEÚDO PRINCIPAL --- */}
       <div className="torn-container space-y-12">
         
         {/* Cabeçalho */}
-        <div className="text-center relative select-none">
+        <div className="text-center relative select-none flex flex-col items-center">
+          {/* Streak Indicator */}
+          <div className="absolute top-0 right-0 flex flex-col items-center mr-2 mt-2">
+            <Flame size={28} className="text-orange-500 animate-pulse" fill="currentColor" />
+            <span className="text-xs font-bold text-orange-600">{streak} dias</span>
+          </div>
+
           <div onClick={handleSecretTrigger} className="cursor-pointer active:scale-90 transition-transform inline-block">
              <Mail className="w-8 h-8 mx-auto mb-3 text-passion animate-bounce-slow" strokeWidth={1.5} /> 
           </div>
@@ -355,6 +485,173 @@ export default function Home() {
             Para Wesley
           </h1>
           <div className="h-0.5 w-16 bg-passion/30 mx-auto mt-4 rounded-full"></div>
+        </div>
+
+        {/* 1. Humor do Dia */}
+        <div className="space-y-3 animate-fade-in">
+          <SectionHeader icon={Smile} title="Como você está hoje?" />
+          <div className="flex justify-around gap-2 bg-white/50 p-4 rounded-xl border border-passion/10 shadow-sm">
+            {[
+              { id: 'Feliz', icon: Smile, color: 'text-green-500' },
+              { id: 'Carente', icon: Heart, color: 'text-pink-500' },
+              { id: 'Triste', icon: Frown, color: 'text-blue-500' },
+              { id: 'Estressado', icon: Angry, color: 'text-red-500' }
+            ].map((h) => {
+              const IconComp = h.icon;
+              return (
+              <button 
+                key={h.id}
+                onClick={() => salvarHumor(h.id)}
+                className={`flex flex-col items-center gap-1 transition-transform p-2 rounded-lg ${meuHumor === h.id ? 'bg-passion/10 scale-110 shadow-inner' : 'hover:bg-passion/5'}`}
+              >
+                <IconComp size={28} className={meuHumor === h.id ? h.color : 'text-gray-400'} fill={meuHumor === h.id ? "currentColor" : "none"} />
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${meuHumor === h.id ? 'text-passion' : 'text-gray-400'}`}>{h.id}</span>
+              </button>
+            )})}
+          </div>
+        </div>
+
+        {/* 2. Pergunta do Dia */}
+        <div className="space-y-3">
+          <SectionHeader icon={MessageSquareHeart} title="Pergunta do Dia" />
+          <div className="bg-gradient-to-br from-red-50 to-white p-5 rounded-xl border border-passion/20 shadow-md">
+            <p className="text-lg font-serif italic text-passion mb-4 text-center">"{perguntaHoje}"</p>
+            
+            {!jaRespondi ? (
+              <div className="space-y-3">
+                <textarea 
+                  value={minhaResposta}
+                  onChange={e => setMinhaResposta(e.target.value)}
+                  placeholder="Sua resposta secreta..."
+                  className="w-full bg-white border border-passion/20 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-passion/50 h-20 resize-none"
+                />
+                <button 
+                  onClick={enviarRespostaPergunta}
+                  className="w-full bg-passion text-white font-bold py-2 rounded-lg shadow hover:bg-red-800 transition-colors"
+                >
+                  Enviar para descobrir a dele
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-passion/5 p-3 rounded-lg border border-passion/10">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-passion/60 block mb-1">Sua resposta:</span>
+                  <p className="text-sm text-gray-800">{minhaResposta || "Respondido."}</p>
+                </div>
+                
+                <div className="bg-passion/5 p-3 rounded-lg border border-passion/10">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-passion/60 block mb-1">Resposta dele:</span>
+                  {respostaParceiro ? (
+                    <p className="text-sm text-gray-800">{respostaParceiro}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Ele ainda não respondeu hoje... 👀</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 3. Desafio Semanal */}
+        <div className="space-y-3">
+          <div className={`relative overflow-hidden p-5 rounded-xl border shadow-md transition-colors ${desafioConcluido ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+             {desafioConcluido && <motion.div initial={{scale:0}} animate={{scale:1}} className="absolute -right-4 -top-4"><CheckCircle2 size={80} className="text-green-500/20" fill="currentColor"/></motion.div>}
+             <div className="flex justify-between items-start mb-2 relative z-10">
+               <span className="text-[10px] font-bold uppercase tracking-widest text-passion/60 flex items-center gap-1"><Star size={12}/> Desafio da Semana</span>
+             </div>
+             <p className="text-base font-serif italic text-passion mb-4 relative z-10">"{desafioSemana}"</p>
+             <button 
+                onClick={marcarDesafio}
+                className={`relative z-10 flex items-center justify-center gap-2 w-full py-2 rounded-lg font-bold text-sm transition-all shadow-sm ${desafioConcluido ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-white text-passion border border-passion/20 hover:bg-red-50'}`}
+              >
+                {desafioConcluido ? <><CheckCircle2 size={16}/> Missão Cumprida!</> : "Marcar como concluído"}
+              </button>
+          </div>
+        </div>
+
+        {/* 4. Calendário de Lembretes */}
+        <div className="space-y-3">
+          <SectionHeader icon={CalendarHeart} title="Nossa Agenda" />
+          
+          <div className="bg-white/60 p-4 rounded-xl border border-passion/20 shadow-sm space-y-4">
+            {/* Formulário Novo Lembrete */}
+            <div className="space-y-2 border-b border-passion/10 pb-4">
+              <input 
+                type="text" 
+                value={novoLembrete.title}
+                onChange={e => setNovoLembrete({...novoLembrete, title: e.target.value})}
+                placeholder="O que vamos fazer?..."
+                className="w-full bg-white border border-passion/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-passion"
+              />
+              <div className="flex gap-2">
+                <input 
+                  type="date" 
+                  value={novoLembrete.date}
+                  onChange={e => setNovoLembrete({...novoLembrete, date: e.target.value})}
+                  className="flex-1 bg-white border border-passion/20 rounded-lg px-2 py-2 text-xs focus:outline-none text-gray-600"
+                />
+                <input 
+                  type="time" 
+                  value={novoLembrete.time}
+                  onChange={e => setNovoLembrete({...novoLembrete, time: e.target.value})}
+                  className="flex-1 bg-white border border-passion/20 rounded-lg px-2 py-2 text-xs focus:outline-none text-gray-600"
+                />
+                <button 
+                  onClick={adicionarLembrete} 
+                  disabled={!novoLembrete.title.trim() || !novoLembrete.date}
+                  className="bg-passion hover:bg-red-800 disabled:opacity-50 text-white p-2 rounded-lg shadow-sm transition-colors flex items-center justify-center"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de Lembretes */}
+            <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+              <AnimatePresence>
+                {lembretes.map(lembrete => {
+                  const dataFormatada = new Date(lembrete.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+                  const dataPassou = new Date(lembrete.date + 'T23:59:59') < new Date()
+                  
+                  return (
+                    <motion.div 
+                      key={lembrete.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className={`flex flex-col gap-2 p-3 rounded-lg border relative ${dataPassou ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-red-50 border-red-100'}`}
+                    >
+                      <div className="flex justify-between items-start pr-6">
+                        <div className="flex items-center gap-2">
+                          <div className={`flex flex-col items-center justify-center w-10 h-10 rounded-md text-white font-bold text-xs ${dataPassou ? 'bg-gray-400' : 'bg-passion'}`}>
+                            <span className="text-[9px] uppercase">{dataFormatada.split(' ')[2]}</span>
+                            <span>{dataFormatada.split(' ')[0]}</span>
+                          </div>
+                          <div>
+                            <p className={`font-bold text-sm ${dataPassou ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{lembrete.title}</p>
+                            {lembrete.time && <p className="text-xs text-gray-500 flex items-center gap-1"><Clock size={10} /> {lembrete.time}</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => deletarLembrete(lembrete.id)}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+              {lembretes.length === 0 && (
+                <div className="text-center py-6 flex flex-col items-center gap-2 text-passion/40">
+                  <CalendarCheck size={32} strokeWidth={1.5} />
+                  <span className="text-xs uppercase tracking-widest font-bold">Nenhum plano marcado.</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* João.IA */}
@@ -527,33 +824,54 @@ export default function Home() {
         {/* Potinho */}
         <div className="space-y-4">
           <SectionHeader icon={Lightbulb} title="O que vamos fazer?" />
-          <div className="bg-passion/5 p-6 rounded-lg border-2 border-dashed border-passion/20 text-center relative overflow-hidden">
-            {!ideiaDate ? (
-              <div className="space-y-4">
-                <p className="text-passion/70 font-serif italic">Sem ideias para hoje? Deixe o destino decidir!</p>
-                <button 
-                  onClick={tirarPapelzinho}
-                  disabled={animandoPotinho}
-                  className="bg-passion text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-passion/90 active:scale-95 transition-all flex items-center justify-center gap-2 mx-auto disabled:opacity-70"
+          <div className="bg-passion/5 p-6 rounded-lg border-2 border-dashed border-passion/20 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[150px]">
+            <AnimatePresence mode="wait">
+              {!ideiaDate ? (
+                <motion.div 
+                  key="potinho-fechado"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, y: -50 }}
+                  className="space-y-4 flex flex-col items-center w-full"
                 >
-                  <RefreshCw size={20} className={animandoPotinho ? "animate-spin" : ""} />
-                  {animandoPotinho ? "Misturando..." : "Agitar o Potinho 🏺"}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4 animate-fade-in">
-                <span className="text-xs uppercase tracking-widest text-passion/50 font-bold">O destino escolheu:</span>
-                <h4 className="text-2xl font-bold text-passion font-serif px-2 leading-relaxed">
-                  ✨ {ideiaDate} ✨
-                </h4>
-                <button 
-                  onClick={() => setIdeiaDate(null)}
-                  className="text-sm text-passion/60 underline hover:text-passion mt-2"
+                  <p className="text-passion/70 font-serif italic mb-2">Sem ideias para hoje? Deslize o potinho!</p>
+                  
+                  <motion.div
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    onDragEnd={(e, info) => {
+                      if (info.offset.x > 100 || info.offset.x < -100) {
+                        tirarPapelzinho()
+                      }
+                    }}
+                    whileTap={{ scale: 0.95, cursor: "grabbing" }}
+                    whileDrag={{ opacity: 0.5 }}
+                    className="bg-passion text-white p-4 rounded-xl shadow-lg cursor-grab mx-auto select-none touch-none w-3/4 flex justify-center items-center gap-2"
+                  >
+                    <RefreshCw size={20} className={animandoPotinho ? "animate-spin" : "animate-pulse"} />
+                    <span className="font-bold">{animandoPotinho ? "Misturando..." : "Deslize >>"}</span>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="potinho-aberto"
+                  initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                  className="space-y-4 w-full"
                 >
-                  Tentar outro
-                </button>
-              </div>
-            )}
+                  <span className="text-xs uppercase tracking-widest text-passion/50 font-bold">O destino escolheu:</span>
+                  <h4 className="text-2xl font-bold text-passion font-serif px-2 leading-relaxed">
+                    ✨ {ideiaDate} ✨
+                  </h4>
+                  <button 
+                    onClick={() => setIdeiaDate(null)}
+                    className="text-sm text-passion/60 underline hover:text-passion mt-2"
+                  >
+                    Guardar no potinho
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

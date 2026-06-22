@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 // Removi o 'Image' dos imports pois não será mais usado
 import { Heart, Calendar, Feather, LogOut, Bell } from 'lucide-react'
-import { collection, query, orderBy, limit, onSnapshot, doc, setDoc } from 'firebase/firestore'
+import { collection, query, orderBy, limit, onSnapshot, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { db, auth } from './lib/firebase'
 import { LocalNotifications } from '@capacitor/local-notifications'
@@ -173,8 +173,46 @@ export default function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser)
+      if (currentUser) {
+        // Lógica do Streak
+        try {
+          const userDocRef = doc(db, "appData", currentUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          // Tratamento de fuso horário local
+          const now = new Date();
+          const hojeStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+          
+          if (userDocSnap.exists()) {
+            const data = userDocSnap.data();
+            const lastLogin = data.lastLoginDate;
+            let newStreak = data.streak || 0;
+            
+            if (lastLogin) {
+              const dateLast = new Date(lastLogin + 'T00:00:00');
+              const dateHoje = new Date(hojeStr + 'T00:00:00');
+              const diffTime = dateHoje.getTime() - dateLast.getTime();
+              const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+              
+              if (diffDays === 1) {
+                newStreak += 1;
+              } else if (diffDays > 1) {
+                newStreak = 1;
+              }
+            } else {
+              newStreak = 1;
+            }
+            
+            if (lastLogin !== hojeStr) {
+              await updateDoc(userDocRef, { lastLoginDate: hojeStr, streak: newStreak });
+            }
+          } else {
+            await setDoc(userDocRef, { lastLoginDate: hojeStr, streak: 1, cuponsUsados: [] });
+          }
+        } catch(e) { console.error("Erro no streak", e) }
+      }
       setLoading(false)
     })
     return () => unsubscribe()

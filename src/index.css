@@ -101,6 +101,23 @@ body {
   .timeline-line {
     @apply absolute left-4 top-0 bottom-0 w-0.5 bg-passion/30;
   }
+
+  .post-it {
+    box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+    position: relative;
+  }
+  .post-it::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, transparent 45%, #eab308 50%, #fde047 60%);
+    box-shadow: -2px -2px 4px rgba(0,0,0,0.1);
+    border-radius: 0 0 4px 0;
+  }
 }
 
 @keyframes glitch {
