@@ -1,5 +1,6 @@
 import http from 'http';
 import handler from './api/addCalendarEvent.js';
+import deleteHandler from './api/deleteCalendarEvent.js';
 import fs from 'fs';
 
 try {
@@ -18,7 +19,7 @@ try {
 
 
 const server = http.createServer((req, res) => {
-  if (req.url === '/api/addCalendarEvent' && req.method === 'POST') {
+  if ((req.url === '/api/addCalendarEvent' || req.url === '/api/deleteCalendarEvent') && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => {
       body += chunk.toString();
@@ -36,7 +37,9 @@ const server = http.createServer((req, res) => {
         return res;
       };
 
-      handler(req, res).catch(err => {
+      const targetHandler = req.url === '/api/addCalendarEvent' ? handler : deleteHandler;
+
+      targetHandler(req, res).catch(err => {
         console.error(err);
         res.status(500).json({ error: err.message });
       });
