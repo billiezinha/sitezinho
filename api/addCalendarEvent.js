@@ -26,6 +26,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (!process.env.GOOGLE_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID === 'undefined') {
+      return res.status(500).json({ error: "Variável GOOGLE_CALENDAR_ID não encontrada", details: "Por favor, adicione na Vercel e faça um Redeploy" });
+    }
+    if (!process.env.GOOGLE_CALENDAR_CREDENTIALS || process.env.GOOGLE_CALENDAR_CREDENTIALS === 'undefined') {
+      return res.status(500).json({ error: "Variável GOOGLE_CALENDAR_CREDENTIALS não encontrada", details: "Por favor, adicione na Vercel e faça um Redeploy" });
+    }
+
     let credsRaw = process.env.GOOGLE_CALENDAR_CREDENTIALS || '{}';
     // Remove aspas simples ou duplas que possam ter vindo do Vercel
     if (credsRaw.startsWith("'") && credsRaw.endsWith("'")) credsRaw = credsRaw.slice(1, -1);
@@ -35,7 +42,7 @@ export default async function handler(req, res) {
     credsRaw = credsRaw.replace(/\\n/g, '\n');
 
     const serviceAccount = JSON.parse(credsRaw);
-    const calendarId = process.env.GOOGLE_CALENDAR_ID?.replace(/['"]/g, '');
+    const calendarId = process.env.GOOGLE_CALENDAR_ID.replace(/['"]/g, '');
 
     const jwtClient = new google.auth.JWT({
       email: serviceAccount.client_email,
