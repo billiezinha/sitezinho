@@ -421,14 +421,9 @@ export default function Home() {
     const userId = auth.currentUser?.uid;
     if (!userId || !novoLembrete.title.trim() || !novoLembrete.date) return;
     
-    // 1. Salva no Firebase
-    await addDoc(collection(db, "lembretes"), {
-      ...novoLembrete,
-      authorId: userId,
-      createdAt: serverTimestamp()
-    });
-    
-    // 2. Salva na Nuvem (Google Agenda) Automaticamente via API
+    let googleEventId = null;
+
+    // 1. Salva na Nuvem (Google Agenda) Automaticamente via API primeiro, para pegar o ID
     try {
       const response = await fetch('/api/addCalendarEvent', {
         method: 'POST',
@@ -442,17 +437,40 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) {
         alert("⚠️ Erro ao salvar no Google Agenda: " + (data.details || data.error || 'Erro Desconhecido'));
+      } else if (data.eventId) {
+        googleEventId = data.eventId;
       }
     } catch(e) { 
       console.error('Erro na sincronização automática', e); 
     }
 
+    // 2. Salva no Firebase (com o ID do Google Agenda, se existir)
+    await addDoc(collection(db, "lembretes"), {
+      ...novoLembrete,
+      googleEventId: googleEventId,
+      authorId: userId,
+      createdAt: serverTimestamp()
+    });
+    
     setNovoLembrete({ title: "", date: "", time: "" });
     await enviarNotificacao("📅 Novo Lembrete", "Marcamos um novo compromisso na nossa agenda!");
   };
 
-  const deletarLembrete = async (id) => {
+  const deletarLembrete = async (id, googleEventId) => {
     await deleteDoc(doc(db, "lembretes", id));
+    
+    // Se tinha no Google Agenda, apaga de lá também
+    if (googleEventId) {
+      try {
+        await fetch('/api/deleteCalendarEvent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId: googleEventId })
+        });
+      } catch (e) {
+        console.error("Falha ao remover do Google Agenda", e);
+      }
+    }
   };
 
   const marcarDesafio = async () => {
@@ -635,7 +653,7 @@ export default function Home() {
                       </div>
 
                       <button 
-                        onClick={() => deletarLembrete(lembrete.id)}
+                        onClick={() => deletarLembrete(lembrete.id, lembrete.googleEventId)}
                         className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
                       >
                         <Trash2 size={14} />
