@@ -1,14 +1,16 @@
 import React from 'react'
 // 1. Adicionei 'IceCream' aqui nos imports
-import { Heart, Calendar, Star, Music, Camera, IceCream } from 'lucide-react'
+import { Heart, Calendar, Star, Music, Camera, IceCream, Gift, Flame } from 'lucide-react'
 
 import imgKiss from '../assets/kiss.jpeg'
 import imgAliancas from '../assets/alianças.jpeg'
 import imgCamisas from '../assets/camisas.jpeg'
 import imgFormei from '../assets/formei.jpeg'
 import imgWicked from '../assets/wicked.jpeg'
-// 2. Importando a nova foto (lembre de colocar o arquivo na pasta assets!)
 import imgMilkMoo from '../assets/milkmoo.jpeg' 
+import imgAniversario from '../assets/aniversario.jpg'
+import imgDiaDasMaes from '../assets/diadasmaes.jpg'
+import imgSaoJoao from '../assets/saojoao.jpg'
 
 export default function Timeline() {
   const eventos = [
@@ -52,13 +54,37 @@ export default function Timeline() {
       image: imgAliancas,
       icon: Heart
     },
-        {
+    {
       id: 6,
       date: "Doçura", // Título da categoria
       title: "Date na Milk Moo", // 3. Novo Evento Adicionado
       description: "Nos divertimos muito saindo para provar aquele milk shake! Momentos doces e risadas com você.",
       image: imgMilkMoo,
       icon: IceCream
+    },
+    {
+      id: 7,
+      date: "Meu Aniversário",
+      title: "Passeio e Parque",
+      description: "Começamos dando uma volta na Lebiscuit e terminamos aproveitando o dia no parque. Comemoração perfeita com você!",
+      image: imgAniversario,
+      icon: Gift
+    },
+    {
+      id: 8,
+      date: "Família",
+      title: "Dia das Mães",
+      description: "Um dia maravilhoso celebrando com a sogrinha! Uma memória muito especial.",
+      image: imgDiaDasMaes,
+      icon: Heart
+    },
+    {
+      id: 9,
+      date: "Festa",
+      title: "São João e Joelma",
+      description: "Aproveitando o São João no show da Joelma. Noite cheia de dança, alegria e muito chamego!",
+      image: imgSaoJoao,
+      icon: Flame
     }
   ]
 
