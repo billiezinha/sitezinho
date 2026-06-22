@@ -430,7 +430,7 @@ export default function Home() {
     
     // 2. Salva na Nuvem (Google Agenda) Automaticamente via API
     try {
-      await fetch('/api/addCalendarEvent', {
+      const response = await fetch('/api/addCalendarEvent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -439,6 +439,10 @@ export default function Home() {
           time: novoLembrete.time
         })
       });
+      const data = await response.json();
+      if (!response.ok) {
+        alert("⚠️ Erro ao salvar no Google Agenda: " + (data.details || data.error || 'Erro Desconhecido'));
+      }
     } catch(e) { 
       console.error('Erro na sincronização automática', e); 
     }
