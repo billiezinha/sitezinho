@@ -472,11 +472,7 @@ export default function Home() {
         
         {/* Cabeçalho */}
         <div className="text-center relative select-none flex flex-col items-center">
-          {/* Streak Indicator */}
-          <div className="absolute top-0 right-0 flex flex-col items-center mr-2 mt-2">
-            <Flame size={28} className="text-orange-500 animate-pulse" fill="currentColor" />
-            <span className="text-xs font-bold text-orange-600">{streak} dias</span>
-          </div>
+
 
           <div onClick={handleSecretTrigger} className="cursor-pointer active:scale-90 transition-transform inline-block">
              <Mail className="w-8 h-8 mx-auto mb-3 text-passion animate-bounce-slow" strokeWidth={1.5} /> 
